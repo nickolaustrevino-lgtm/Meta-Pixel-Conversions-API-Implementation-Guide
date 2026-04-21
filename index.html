@@ -1080,12 +1080,43 @@ const observer = new IntersectionObserver(entries => {
 }, { rootMargin: '-20% 0px -70% 0px', threshold: 0 });
 Object.values(sectionMap).forEach(el => observer.observe(el));
 
-// ── CHECKLIST TOGGLE ──
-let totalItems = 0, checkedItems = 0;
+// ── CHECKLIST TOGGLE (with localStorage persistence) ──
+const STORAGE_KEY = 'nowfit_monet_checklist_v1';
+
+// Assign a stable data-key to every checklist item based on its parent list id + index
+function assignChecklistKeys() {
+  document.querySelectorAll('.checklist').forEach(ul => {
+    const listId = ul.id || ul.className.replace(/\s+/g, '-');
+    ul.querySelectorAll('li').forEach((li, i) => {
+      li.dataset.key = listId + '__' + i;
+    });
+  });
+}
+
+// Load saved state from localStorage and apply .checked classes
+function restoreChecklist() {
+  let saved = {};
+  try { saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); } catch(e) {}
+  document.querySelectorAll('.checklist li[data-key]').forEach(li => {
+    if (saved[li.dataset.key]) li.classList.add('checked');
+  });
+}
+
+// Save current state to localStorage
+function saveChecklist() {
+  const state = {};
+  document.querySelectorAll('.checklist li[data-key]').forEach(li => {
+    if (li.classList.contains('checked')) state[li.dataset.key] = true;
+  });
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e) {}
+}
+
 function toggleCheck(li) {
   li.classList.toggle('checked');
+  saveChecklist();
   updateProgress();
 }
+
 function updateProgress() {
   const all = document.querySelectorAll('.checklist li');
   const checked = document.querySelectorAll('.checklist li.checked');
@@ -1098,6 +1129,10 @@ function updateProgress() {
   document.getElementById('launch-fill').style.width = lPct + '%';
   document.getElementById('launch-count').textContent = launchChecked.length + ' / ' + launchAll.length;
 }
+
+// Initialise — assign keys, restore saved state, then render progress
+assignChecklistKeys();
+restoreChecklist();
 updateProgress();
 
 // ── COPY CODE ──
