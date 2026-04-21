@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en" data-theme="light">
 <head>
@@ -1080,43 +1079,12 @@ const observer = new IntersectionObserver(entries => {
 }, { rootMargin: '-20% 0px -70% 0px', threshold: 0 });
 Object.values(sectionMap).forEach(el => observer.observe(el));
 
-// ── CHECKLIST TOGGLE (with localStorage persistence) ──
-const STORAGE_KEY = 'nowfit_monet_checklist_v1';
-
-// Assign a stable data-key to every checklist item based on its parent list id + index
-function assignChecklistKeys() {
-  document.querySelectorAll('.checklist').forEach(ul => {
-    const listId = ul.id || ul.className.replace(/\s+/g, '-');
-    ul.querySelectorAll('li').forEach((li, i) => {
-      li.dataset.key = listId + '__' + i;
-    });
-  });
-}
-
-// Load saved state from localStorage and apply .checked classes
-function restoreChecklist() {
-  let saved = {};
-  try { saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); } catch(e) {}
-  document.querySelectorAll('.checklist li[data-key]').forEach(li => {
-    if (saved[li.dataset.key]) li.classList.add('checked');
-  });
-}
-
-// Save current state to localStorage
-function saveChecklist() {
-  const state = {};
-  document.querySelectorAll('.checklist li[data-key]').forEach(li => {
-    if (li.classList.contains('checked')) state[li.dataset.key] = true;
-  });
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e) {}
-}
-
+// ── CHECKLIST TOGGLE ──
+let totalItems = 0, checkedItems = 0;
 function toggleCheck(li) {
   li.classList.toggle('checked');
-  saveChecklist();
   updateProgress();
 }
-
 function updateProgress() {
   const all = document.querySelectorAll('.checklist li');
   const checked = document.querySelectorAll('.checklist li.checked');
@@ -1129,10 +1097,6 @@ function updateProgress() {
   document.getElementById('launch-fill').style.width = lPct + '%';
   document.getElementById('launch-count').textContent = launchChecked.length + ' / ' + launchAll.length;
 }
-
-// Initialise — assign keys, restore saved state, then render progress
-assignChecklistKeys();
-restoreChecklist();
 updateProgress();
 
 // ── COPY CODE ──
@@ -1145,6 +1109,5 @@ function copyCode(btn) {
   });
 }
 </script>
-<script src="https://www.genspark.ai/sandbox_inspect.js"></script><script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 </body>
 </html>
