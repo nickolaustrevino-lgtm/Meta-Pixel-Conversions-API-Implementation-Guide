@@ -1,0 +1,991 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meta Pixel + Conversions API — Pilates x Strength by Monet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --font-body:'Inter','Helvetica Neue',sans-serif;
+  --font-mono:'JetBrains Mono','Courier New',monospace;
+  --text-xs:clamp(0.75rem,0.7rem + 0.25vw,0.875rem);
+  --text-sm:clamp(0.875rem,0.8rem + 0.35vw,1rem);
+  --text-base:clamp(1rem,0.95rem + 0.25vw,1.125rem);
+  --text-lg:clamp(1.125rem,1rem + 0.75vw,1.5rem);
+  --text-xl:clamp(1.5rem,1.2rem + 1.25vw,2.25rem);
+  --space-1:0.25rem;--space-2:0.5rem;--space-3:0.75rem;--space-4:1rem;
+  --space-5:1.25rem;--space-6:1.5rem;--space-8:2rem;--space-10:2.5rem;
+  --space-12:3rem;--space-16:4rem;
+  --radius-sm:0.375rem;--radius-md:0.5rem;--radius-lg:0.75rem;
+  --radius-xl:1rem;--radius-full:9999px;
+  --color-bg:#f8f9fb;--color-surface:#ffffff;--color-surface-2:#f3f5f8;
+  --color-surface-offset:#edf0f5;--color-border:#dde2ea;--color-divider:#e8ecf2;
+  --color-text:#111827;--color-text-muted:#4b5563;--color-text-faint:#9ca3af;
+  --color-primary:#1877F2;--color-primary-hover:#1465d8;
+  --color-primary-light:#e8f0fe;--color-primary-mid:#c3d9fc;
+  --color-navy:#0d1b3e;--color-navy-mid:#1a2f5e;
+  --color-success:#16a34a;--color-success-light:#dcfce7;
+  --color-warning:#d97706;--color-warning-light:#fef3c7;
+  --color-error:#dc2626;--color-error-light:#fee2e2;
+  --color-info:#0891b2;--color-info-light:#e0f2fe;
+  --shadow-sm:0 1px 3px rgba(0,0,0,0.06),0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md:0 4px 12px rgba(0,0,0,0.08),0 2px 4px rgba(0,0,0,0.05);
+  --shadow-lg:0 12px 32px rgba(0,0,0,0.10),0 4px 8px rgba(0,0,0,0.06);
+  --transition:180ms cubic-bezier(0.16,1,0.3,1);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{-webkit-font-smoothing:antialiased;scroll-behavior:smooth;}
+body{font-family:var(--font-body);font-size:var(--text-base);color:var(--color-text);background:var(--color-bg);line-height:1.65;}
+img{display:block;max-width:100%;}
+ul{list-style:none;}
+button{cursor:pointer;font:inherit;border:none;background:none;}
+
+@media print {
+  @page{margin:18mm 16mm;size:A4;}
+  body{background:white;font-size:10pt;color:#111;}
+  .page-break{page-break-before:always;break-before:page;}
+  .no-print{display:none!important;}
+  nav,.toc-sidebar,.print-btn{display:none;}
+  a{color:inherit;text-decoration:none;}
+  .step-card,.checklist-box,.callout,.code-block{box-shadow:none;border:1px solid #dde;}
+  .cover-hero{background:#0d1b3e!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  .section-num-badge{background:#1877F2!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  .step-num{background:#1877F2!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  .final-checklist{background:#0d1b3e!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  .workflow-card-header.blue{background:#e8f0fe!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  .workflow-card-header.green{background:#f0fdf4!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  .workflow-card-header.purple{background:#faf5ff!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  .code-block{background:#0f172a!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  .step-card{page-break-inside:avoid;break-inside:avoid;}
+  .checklist-box{page-break-inside:avoid;break-inside:avoid;}
+  .diagram-wrapper{page-break-inside:avoid;break-inside:avoid;}
+}
+
+.doc-wrapper{max-width:900px;margin:0 auto;padding:0 clamp(1.5rem,5vw,4rem) 6rem;}
+
+/* COVER */
+.cover-page{min-height:100vh;display:flex;flex-direction:column;background:var(--color-bg);}
+.cover-hero{background:linear-gradient(145deg,#0d1b3e 0%,#1a2f5e 50%,#1877F2 100%);padding:var(--space-16) clamp(1.5rem,5vw,4rem) var(--space-20);position:relative;overflow:hidden;text-align:center;display:flex;flex-direction:column;align-items:center;}
+.cover-hero::before{content:'';position:absolute;top:-40%;right:-20%;width:600px;height:600px;background:radial-gradient(circle,rgba(24,119,242,0.25) 0%,transparent 65%);pointer-events:none;}
+.agency-logo-placeholder{display:inline-flex;align-items:center;gap:var(--space-3);background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:var(--radius-lg);padding:var(--space-3) var(--space-5);margin-bottom:var(--space-12);width:fit-content;}
+.agency-logo-placeholder span{color:rgba(255,255,255,0.7);font-size:var(--text-sm);font-weight:500;letter-spacing:0.03em;}
+.cover-eyebrow{font-size:var(--text-sm);font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,255,255,0.55);margin-bottom:var(--space-4);text-align:center;}
+.cover-title{font-size:clamp(1.8rem,4vw,3rem);font-weight:700;color:#fff;line-height:1.1;margin-bottom:var(--space-4);max-width:640px;margin-left:auto;margin-right:auto;}
+.cover-title span{color:#60a5fa;}
+.cover-subtitle{font-size:var(--text-lg);color:rgba(255,255,255,0.65);font-weight:400;margin-bottom:var(--space-10);max-width:500px;line-height:1.5;margin-left:auto;margin-right:auto;}
+.cover-meta-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--space-4);width:100%;max-width:720px;margin-left:auto;margin-right:auto;}
+.cover-meta-item{background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:var(--radius-md);padding:var(--space-4);}
+.cover-meta-label{font-size:var(--text-xs);font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:rgba(255,255,255,0.45);margin-bottom:var(--space-1);}
+.cover-meta-value{font-size:var(--text-sm);font-weight:600;color:rgba(255,255,255,0.9);}
+.cover-body{padding:var(--space-10) clamp(1.5rem,5vw,4rem);background:var(--color-surface);border-bottom:1px solid var(--color-border);}
+.cover-section-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:var(--space-3);}
+.cover-section-item{display:flex;align-items:center;gap:var(--space-3);padding:var(--space-3) var(--space-4);background:var(--color-surface-2);border:1px solid var(--color-border);border-radius:var(--radius-md);font-size:var(--text-sm);color:var(--color-text-muted);text-decoration:none;cursor:pointer;transition:background var(--transition),border-color var(--transition),color var(--transition);}
+.cover-section-item:hover{background:var(--color-primary-light);border-color:var(--color-primary-mid);color:var(--color-primary);}
+.cover-section-item .dot{width:6px;height:6px;border-radius:50%;background:var(--color-primary);flex-shrink:0;}
+.cover-disclaimer{font-size:var(--text-xs);color:var(--color-text-faint);padding:var(--space-6) clamp(1.5rem,5vw,4rem);background:var(--color-surface-2);border-bottom:1px solid var(--color-border);}
+
+/* SECTIONS */
+.doc-section{padding-top:var(--space-16);scroll-margin-top:1.5rem;}
+.section-header{display:flex;align-items:flex-start;gap:var(--space-4);margin-bottom:var(--space-8);padding-bottom:var(--space-6);border-bottom:2px solid var(--color-border);position:relative;}
+.section-anchor-link{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:var(--radius-sm);color:var(--color-text-faint);text-decoration:none;opacity:0;transition:opacity var(--transition),color var(--transition),background var(--transition);position:absolute;right:0;top:0;flex-shrink:0;}
+.section-anchor-link:hover{color:var(--color-primary);background:var(--color-primary-light);opacity:1;}
+.section-header:hover .section-anchor-link{opacity:1;}
+.section-title{font-size:var(--text-xl);font-weight:700;color:var(--color-navy);line-height:1.15;cursor:pointer;}
+.section-title:hover{color:var(--color-primary);}
+.section-num-badge{display:flex;align-items:center;justify-content:center;width:44px;height:44px;min-width:44px;background:var(--color-primary);color:white;border-radius:var(--radius-md);font-size:var(--text-sm);font-weight:700;}
+.section-title-group{flex:1;}
+.section-label{font-size:var(--text-xs);font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--color-primary);margin-bottom:var(--space-1);}
+/* section-title style now defined above */
+.section-desc{font-size:var(--text-base);color:var(--color-text-muted);margin-top:var(--space-2);max-width:62ch;}
+
+/* STEP CARDS */
+.steps-list{display:flex;flex-direction:column;gap:var(--space-4);margin-bottom:var(--space-8);}
+.step-card{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:var(--space-5) var(--space-6);display:flex;gap:var(--space-5);align-items:flex-start;box-shadow:var(--shadow-sm);page-break-inside:avoid;break-inside:avoid;}
+.step-num{display:flex;align-items:center;justify-content:center;width:32px;height:32px;min-width:32px;background:var(--color-primary);color:white;border-radius:var(--radius-md);font-size:var(--text-sm);font-weight:700;margin-top:2px;}
+.step-content{flex:1;}
+.step-title{font-size:var(--text-base);font-weight:600;color:var(--color-text);margin-bottom:var(--space-2);}
+.step-body{font-size:var(--text-sm);color:var(--color-text-muted);line-height:1.6;}
+.step-body strong{color:var(--color-text);}
+.step-nav-path{display:inline-flex;align-items:center;gap:var(--space-1);background:var(--color-surface-2);border:1px solid var(--color-border);border-radius:var(--radius-sm);padding:var(--space-1) var(--space-3);font-size:var(--text-xs);font-family:var(--font-mono);color:var(--color-text-muted);margin-top:var(--space-2);font-weight:500;flex-wrap:wrap;}
+.nav-arrow{color:var(--color-primary);margin:0 1px;}
+
+/* CALLOUTS */
+.callout{display:flex;gap:var(--space-4);padding:var(--space-5) var(--space-6);border-radius:var(--radius-lg);margin:var(--space-6) 0;page-break-inside:avoid;break-inside:avoid;}
+.callout-icon{font-size:1.2rem;flex-shrink:0;margin-top:1px;}
+.callout-content{flex:1;}
+.callout-title{font-size:var(--text-sm);font-weight:700;margin-bottom:var(--space-2);letter-spacing:0.02em;}
+.callout-body{font-size:var(--text-sm);line-height:1.65;}
+.callout-body strong{font-weight:600;}
+.callout.warning{background:var(--color-warning-light);border:1px solid #fcd34d;border-left:4px solid var(--color-warning);}
+.callout.warning .callout-title{color:#92400e;}
+.callout.warning .callout-body{color:#78350f;}
+.callout.critical{background:var(--color-error-light);border:1px solid #fca5a5;border-left:4px solid var(--color-error);}
+.callout.critical .callout-title{color:#991b1b;}
+.callout.critical .callout-body{color:#7f1d1d;}
+.callout.info{background:var(--color-info-light);border:1px solid #7dd3fc;border-left:4px solid var(--color-info);}
+.callout.info .callout-title{color:#0c4a6e;}
+.callout.info .callout-body{color:#0c4a6e;}
+.callout.success{background:var(--color-success-light);border:1px solid #86efac;border-left:4px solid var(--color-success);}
+.callout.success .callout-title{color:#14532d;}
+.callout.success .callout-body{color:#14532d;}
+
+/* CHECKLISTS */
+.checklist-box{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:var(--space-5) var(--space-6);margin:var(--space-6) 0;page-break-inside:avoid;break-inside:avoid;box-shadow:var(--shadow-sm);}
+.checklist-title{font-size:var(--text-sm);font-weight:700;color:var(--color-text);letter-spacing:0.04em;text-transform:uppercase;margin-bottom:var(--space-4);display:flex;align-items:center;gap:var(--space-2);}
+.checklist-title::before{content:'';display:block;width:3px;height:16px;background:var(--color-success);border-radius:2px;}
+.checklist-items{display:flex;flex-direction:column;gap:var(--space-3);}
+.checklist-item{display:flex;align-items:flex-start;gap:var(--space-3);font-size:var(--text-sm);color:var(--color-text-muted);line-height:1.5;}
+.check-box{width:18px;height:18px;min-width:18px;border:2px solid var(--color-border);border-radius:4px;background:var(--color-surface-2);margin-top:1px;}
+.checklist-item strong{color:var(--color-text);font-weight:600;}
+
+/* CODE BLOCKS */
+.code-block{background:#0f172a;border-radius:var(--radius-lg);overflow:hidden;margin:var(--space-5) 0;page-break-inside:avoid;break-inside:avoid;box-shadow:var(--shadow-md);}
+.code-header{background:#1e2a3d;padding:var(--space-3) var(--space-5);display:flex;align-items:center;gap:var(--space-3);border-bottom:1px solid rgba(255,255,255,0.06);}
+.code-dots{display:flex;gap:var(--space-2);}
+.code-dot{width:10px;height:10px;border-radius:50%;}
+.code-dot.red{background:#ff5f57;}
+.code-dot.yellow{background:#febc2e;}
+.code-dot.green{background:#28c840;}
+.code-filename{font-size:var(--text-xs);font-family:var(--font-mono);color:rgba(255,255,255,0.45);margin-left:var(--space-1);}
+.code-content{padding:var(--space-5) var(--space-6);font-family:var(--font-mono);font-size:0.82rem;line-height:1.7;color:#e2e8f0;overflow-x:auto;white-space:pre;}
+.cm{color:#64748b;}
+.kw{color:#93c5fd;}
+.fn{color:#fbbf24;}
+.st{color:#86efac;}
+.nm{color:#f0abfc;}
+.op{color:#94a3b8;}
+
+/* SCREENSHOT PLACEHOLDER */
+.screenshot-placeholder{background:var(--color-surface-2);border:2px dashed var(--color-border);border-radius:var(--radius-lg);padding:var(--space-8) var(--space-6);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--space-3);margin:var(--space-5) 0;text-align:center;page-break-inside:avoid;break-inside:avoid;}
+.screenshot-icon{width:40px;height:40px;background:var(--color-primary-light);border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;color:var(--color-primary);}
+.screenshot-label{font-size:var(--text-xs);font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--color-text-faint);}
+.screenshot-path{font-size:var(--text-sm);font-family:var(--font-mono);color:var(--color-text-muted);font-weight:500;}
+
+/* DIAGRAMS */
+.diagram-wrapper{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-xl);padding:var(--space-8) var(--space-6);margin:var(--space-6) 0;page-break-inside:avoid;break-inside:avoid;box-shadow:var(--shadow-sm);}
+.diagram-title{font-size:var(--text-sm);font-weight:700;color:var(--color-text-muted);text-transform:uppercase;letter-spacing:0.08em;text-align:center;margin-bottom:var(--space-8);}
+.flow-diagram{display:flex;flex-direction:column;align-items:center;gap:0;}
+.flow-node{display:flex;align-items:center;gap:var(--space-3);background:var(--color-surface-2);border:1.5px solid var(--color-border);border-radius:var(--radius-lg);padding:var(--space-3) var(--space-5);min-width:280px;max-width:380px;width:100%;position:relative;}
+.flow-node.primary-node{background:var(--color-primary-light);border-color:var(--color-primary-mid);}
+.flow-node.server-node{background:#f0fdf4;border-color:#86efac;}
+.flow-node.meta-node{background:#faf5ff;border-color:#d8b4fe;}
+.flow-node.highlight-node{background:linear-gradient(135deg,var(--color-primary-light),#f0fdf4);border-color:var(--color-primary);border-width:2px;}
+.node-icon{width:32px;height:32px;min-width:32px;border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;font-size:0.9rem;}
+.node-label{font-size:var(--text-sm);font-weight:600;color:var(--color-text);line-height:1.3;}
+.node-sublabel{font-size:var(--text-xs);color:var(--color-text-faint);margin-top:1px;}
+.node-badge{margin-left:auto;font-size:0.65rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;padding:2px 7px;border-radius:var(--radius-full);}
+.badge-browser{background:#dbeafe;color:#1e40af;}
+.badge-server{background:#dcfce7;color:#15803d;}
+.badge-meta{background:#ede9fe;color:#6d28d9;}
+.badge-dedup{background:#fef3c7;color:#92400e;}
+.flow-arrow{display:flex;align-items:center;justify-content:center;height:32px;color:var(--color-primary);font-size:1.2rem;}
+.branch-header{font-size:var(--text-xs);font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:var(--space-2) var(--space-4);border-radius:var(--radius-full);margin-bottom:var(--space-2);}
+.branch-browser{background:#dbeafe;color:#1e40af;}
+.branch-server{background:#dcfce7;color:#15803d;}
+
+/* WORKFLOW CARDS */
+.workflow-card{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--shadow-sm);page-break-inside:avoid;break-inside:avoid;margin-bottom:var(--space-4);}
+.workflow-card-header{padding:var(--space-4) var(--space-5);display:flex;align-items:center;gap:var(--space-3);}
+.workflow-card-header.blue{background:var(--color-primary-light);border-bottom:1px solid var(--color-primary-mid);}
+.workflow-card-header.green{background:#f0fdf4;border-bottom:1px solid #86efac;}
+.workflow-card-header.purple{background:#faf5ff;border-bottom:1px solid #d8b4fe;}
+.workflow-icon{width:36px;height:36px;border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;}
+.workflow-icon.blue{background:#bfdbfe;}
+.workflow-icon.green{background:#bbf7d0;}
+.workflow-icon.purple{background:#ede9fe;}
+.workflow-name{font-size:var(--text-sm);font-weight:700;color:var(--color-text);}
+.workflow-event-tag{margin-left:auto;font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;padding:2px 8px;border-radius:var(--radius-full);}
+.tag-blue{background:#1877F2;color:white;}
+.tag-green{background:var(--color-success);color:white;}
+.tag-purple{background:#7c3aed;color:white;}
+.workflow-steps{padding:var(--space-4) var(--space-5);display:flex;flex-direction:column;gap:var(--space-3);}
+.workflow-step-row{display:flex;align-items:flex-start;gap:var(--space-3);}
+.workflow-step-dot{width:8px;height:8px;border-radius:50%;margin-top:5px;flex-shrink:0;}
+.dot-blue{background:var(--color-primary);}
+.dot-green{background:var(--color-success);}
+.dot-purple{background:#7c3aed;}
+.workflow-step-text{font-size:var(--text-xs);color:var(--color-text-muted);line-height:1.5;}
+.workflow-step-text strong{color:var(--color-text);font-weight:600;display:block;margin-bottom:2px;}
+
+/* PARAM TABLE */
+.param-table{width:100%;border-collapse:collapse;border-radius:var(--radius-lg);overflow:hidden;border:1px solid var(--color-border);margin:var(--space-5) 0;font-size:var(--text-sm);page-break-inside:avoid;break-inside:avoid;}
+.param-table thead{background:var(--color-navy);color:white;}
+.param-table th{padding:var(--space-3) var(--space-4);text-align:left;font-size:var(--text-xs);font-weight:700;letter-spacing:0.06em;text-transform:uppercase;}
+.param-table td{padding:var(--space-3) var(--space-4);border-bottom:1px solid var(--color-divider);vertical-align:top;}
+.param-table tbody tr:last-child td{border-bottom:none;}
+.param-table tbody tr:nth-child(even) td{background:var(--color-surface-2);}
+.param-key{font-family:var(--font-mono);font-size:0.78rem;color:var(--color-primary);font-weight:500;white-space:nowrap;}
+.required-badge{display:inline-block;font-size:0.6rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;padding:1px 6px;border-radius:var(--radius-full);background:#fee2e2;color:#991b1b;margin-left:var(--space-2);}
+.optional-badge{display:inline-block;font-size:0.6rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;padding:1px 6px;border-radius:var(--radius-full);background:var(--color-surface-offset);color:var(--color-text-faint);margin-left:var(--space-2);}
+
+/* DIAGNOSTICS TABLE */
+.diag-table{width:100%;border-collapse:collapse;border:1px solid var(--color-border);border-radius:var(--radius-lg);overflow:hidden;font-size:var(--text-sm);margin:var(--space-5) 0;}
+.diag-table thead{background:#1e2a3d;color:white;}
+.diag-table th{padding:var(--space-3) var(--space-4);text-align:left;font-size:var(--text-xs);font-weight:700;letter-spacing:0.06em;text-transform:uppercase;}
+.diag-table td{padding:var(--space-4);border-bottom:1px solid var(--color-divider);vertical-align:top;color:var(--color-text-muted);}
+.diag-table tbody tr:last-child td{border-bottom:none;}
+.issue-label{font-weight:600;color:var(--color-error);font-size:var(--text-xs);display:block;margin-bottom:var(--space-1);}
+
+/* SUBSECTION */
+.subsection-title{font-size:var(--text-base);font-weight:700;color:var(--color-text);margin:var(--space-8) 0 var(--space-4);display:flex;align-items:center;gap:var(--space-3);}
+.subsection-title::after{content:'';flex:1;height:1px;background:var(--color-border);}
+
+/* BODY TEXT */
+.body-text{font-size:var(--text-sm);color:var(--color-text-muted);line-height:1.75;max-width:68ch;margin-bottom:var(--space-4);}
+.body-text strong{color:var(--color-text);}
+
+/* HIGHLIGHT MONO */
+.highlight-mono{font-family:var(--font-mono);font-size:0.85em;background:var(--color-surface-2);border:1px solid var(--color-border);border-radius:var(--radius-sm);padding:1px 6px;color:var(--color-primary);font-weight:500;}
+
+/* EVENT PILLS */
+.event-pills{display:flex;flex-wrap:wrap;gap:var(--space-2);margin:var(--space-4) 0;}
+.event-pill{display:inline-flex;align-items:center;gap:var(--space-2);font-size:var(--text-xs);font-weight:700;letter-spacing:0.04em;padding:var(--space-2) var(--space-3);border-radius:var(--radius-full);font-family:var(--font-mono);}
+.pill-lead{background:#dbeafe;color:#1e40af;}
+.pill-schedule{background:#dcfce7;color:#15803d;}
+.pill-qualified{background:#fef9c3;color:#713f12;}
+.pill-purchase{background:#ede9fe;color:#5b21b6;}
+
+/* FINAL CHECKLIST */
+.final-checklist{background:var(--color-navy);border-radius:var(--radius-xl);padding:var(--space-8);color:white;page-break-inside:avoid;break-inside:avoid;}
+.final-checklist-title{font-size:var(--text-xl);font-weight:700;color:white;margin-bottom:var(--space-2);}
+.final-checklist-sub{font-size:var(--text-sm);color:rgba(255,255,255,0.55);margin-bottom:var(--space-8);}
+.final-check-grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-8);}
+@media(max-width:600px){.final-check-grid{grid-template-columns:1fr;}}
+.final-check-item{display:flex;align-items:flex-start;gap:var(--space-3);font-size:var(--text-sm);color:rgba(255,255,255,0.8);line-height:1.5;margin-bottom:var(--space-3);}
+.final-check-box{width:18px;height:18px;min-width:18px;border:1.5px solid rgba(255,255,255,0.3);border-radius:4px;margin-top:1px;background:rgba(255,255,255,0.05);}
+
+/* PAGE BREAK */
+.page-break{page-break-before:always;break-before:page;}
+@media screen{
+  .page-break{border-top:2px dashed var(--color-border);margin:var(--space-16) 0 0;padding-top:0;position:relative;}
+  .page-break::before{content:'PAGE BREAK';position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:var(--color-bg);padding:0 var(--space-3);font-size:0.6rem;font-weight:700;letter-spacing:0.1em;color:var(--color-text-faint);}
+}
+
+/* PRINT BUTTON */
+.print-btn{position:fixed;bottom:var(--space-8);right:var(--space-8);background:var(--color-navy);color:white;border-radius:var(--radius-lg);padding:var(--space-3) var(--space-5);font-size:var(--text-sm);font-weight:600;display:flex;align-items:center;gap:var(--space-2);box-shadow:var(--shadow-lg);z-index:100;transition:background var(--transition),transform var(--transition),box-shadow var(--transition);}
+.print-btn:hover{background:var(--color-navy-mid);transform:translateY(-2px);box-shadow:0 16px 40px rgba(0,0,0,0.18);}
+@media print{.print-btn{display:none;}}
+</style>
+</head>
+<body>
+
+<div class="cover-page">
+  <div class="cover-hero">
+    <div class="cover-eyebrow">Implementation Guide &middot; Confidential</div>
+    <h1 class="cover-title">Meta Pixel + <span>Conversions API</span><br>Implementation Guide</h1>
+    <p class="cover-subtitle">For Pilates x Strength by Monet &mdash; full-funnel tracking setup using GoHighLevel Funnels and Meta Business Suite.</p>
+    <div class="cover-meta-grid">
+      <div class="cover-meta-item"><div class="cover-meta-label">Client</div><div class="cover-meta-value">Pilates x Strength by Monet</div></div>
+      <div class="cover-meta-item"><div class="cover-meta-label">Website</div><div class="cover-meta-value">bejewelled-llama-eaffb5.netlify.app</div></div>
+      <div class="cover-meta-item"><div class="cover-meta-label">Platforms</div><div class="cover-meta-value">Meta Ads &middot; GoHighLevel</div></div>
+      <div class="cover-meta-item"><div class="cover-meta-label">Version</div><div class="cover-meta-value">1.0 &middot; April 2026</div></div>
+    </div>
+  </div>
+  <div class="cover-body">
+    <p style="font-size:var(--text-xs);font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--color-text-faint);margin-bottom:var(--space-4);">Sections in this document</p>
+    <div class="cover-section-list">
+      <a class="cover-section-item" href="#section-1"><span class="dot"></span>Overview</a>
+      <a class="cover-section-item" href="#section-2"><span class="dot"></span>Confirm the Meta Pixel</a>
+      <a class="cover-section-item" href="#section-3"><span class="dot"></span>Install Pixel in GoHighLevel</a>
+      <a class="cover-section-item" href="#section-4"><span class="dot"></span>Generate CAPI Access Token</a>
+      <a class="cover-section-item" href="#section-5"><span class="dot"></span>Configure GHL Workflows</a>
+      <a class="cover-section-item" href="#section-6"><span class="dot"></span>Event Deduplication</a>
+      <a class="cover-section-item" href="#section-7"><span class="dot"></span>Advanced Matching</a>
+      <a class="cover-section-item" href="#section-8"><span class="dot"></span>Funnel Conversion Signals</a>
+      <a class="cover-section-item" href="#section-9"><span class="dot"></span>Qualified Lead Signals</a>
+      <a class="cover-section-item" href="#section-10"><span class="dot"></span>Testing Events</a>
+      <a class="cover-section-item" href="#section-11"><span class="dot"></span>Launch Checklist</a>
+      <a class="cover-section-item" href="#section-12"><span class="dot"></span>Monitoring Diagnostics</a>
+    </div>
+  </div>
+  <div class="cover-disclaimer">This document is a technical implementation manual prepared for internal use. It contains platform navigation instructions, code snippets, and tracking architecture specific to this client's setup.</div>
+</div>
+
+<div class="doc-wrapper">
+
+<!-- SECTION 1 -->
+<div id="section-1" class="doc-section page-break">
+  <div class="section-header">
+    <a class="section-anchor-link" href="#section-1" title="Link to this section"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></a>
+    <div class="section-num-badge">01</div>
+    <div class="section-title-group">
+      <div class="section-label">Foundation</div>
+      <h2 class="section-title" onclick="location.href='#section-1'">Overview: Browser + Server Tracking</h2>
+      <p class="section-desc">Why two tracking methods are required and how they complement each other.</p>
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-5);margin-bottom:var(--space-8);">
+    <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:var(--space-6);box-shadow:var(--shadow-sm);">
+      <div style="display:flex;align-items:center;gap:var(--space-3);margin-bottom:var(--space-4);">
+        <div style="width:36px;height:36px;background:var(--color-primary-light);border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;font-size:1rem;">&#127760;</div>
+        <div><div style="font-size:var(--text-xs);font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--color-primary);">Browser Event</div><div style="font-size:var(--text-sm);font-weight:700;color:var(--color-text);">Meta Pixel (Client-Side)</div></div>
+      </div>
+      <p class="body-text">The Meta Pixel is a JavaScript snippet installed on your funnel. When a visitor submits a form or takes an action, the pixel fires an event directly from their browser to Meta. <strong>Limitation:</strong> Browser pixels are blocked by ad blockers and iOS privacy changes. 20&ndash;40% of conversions go unmeasured without server-side tracking.</p>
+    </div>
+    <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:var(--space-6);box-shadow:var(--shadow-sm);">
+      <div style="display:flex;align-items:center;gap:var(--space-3);margin-bottom:var(--space-4);">
+        <div style="width:36px;height:36px;background:#f0fdf4;border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;font-size:1rem;">&#128187;</div>
+        <div><div style="font-size:var(--text-xs);font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--color-success);">Server Event</div><div style="font-size:var(--text-sm);font-weight:700;color:var(--color-text);">Conversions API (Server-Side)</div></div>
+      </div>
+      <p class="body-text">CAPI sends event data directly from GoHighLevel's servers to Meta, bypassing the browser entirely. It is unaffected by ad blockers or iOS restrictions. <strong>Result:</strong> Full conversion visibility and more reliable attribution when used alongside the pixel.</p>
+    </div>
+  </div>
+  <div class="diagram-wrapper">
+    <div class="diagram-title">Tracking Architecture &mdash; Data Flow to Meta</div>
+    <div class="flow-diagram">
+      <div class="flow-node primary-node" style="max-width:320px;">
+        <div class="node-icon" style="background:#bfdbfe;">&#127947;</div>
+        <div><div class="node-label">Website Funnel</div><div class="node-sublabel">GoHighLevel &middot; bejewelled-llama-eaffb5.netlify.app</div></div>
+      </div>
+      <div class="flow-arrow">&#9660;</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-4);width:100%;max-width:560px;">
+        <div style="display:flex;flex-direction:column;align-items:center;">
+          <div class="branch-header branch-browser">&#127760; Browser Event</div>
+          <div class="flow-node" style="min-width:0;"><div><div class="node-label" style="font-size:0.8rem;">Meta Pixel Fires</div><div class="node-sublabel">fbq('track','Lead')</div></div><span class="node-badge badge-browser">Browser</span></div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;">
+          <div class="branch-header branch-server">&#128187; Server Event</div>
+          <div class="flow-node server-node" style="min-width:0;"><div><div class="node-label" style="font-size:0.8rem;">GHL Workflow Triggers</div><div class="node-sublabel">CAPI Action executes</div></div><span class="node-badge badge-server">Server</span></div>
+        </div>
+      </div>
+      <div class="flow-arrow">&#9660;</div>
+      <div class="flow-node highlight-node" style="max-width:340px;">
+        <div class="node-icon" style="background:#bfdbfe;">&#9889;</div>
+        <div><div class="node-label">Meta Conversions API</div><div class="node-sublabel">Server event sent with matching event_id</div></div>
+        <span class="node-badge badge-dedup">Dedup</span>
+      </div>
+      <div class="flow-arrow">&#9660;</div>
+      <div class="flow-node meta-node" style="max-width:280px;">
+        <div class="node-icon" style="background:#ede9fe;">&#128202;</div>
+        <div><div class="node-label">Meta Events Manager</div><div class="node-sublabel">Single deduplicated conversion</div></div>
+        <span class="node-badge badge-meta">Meta</span>
+      </div>
+      <div class="flow-arrow">&#9660;</div>
+      <div class="flow-node" style="max-width:260px;background:#faf5ff;border-color:#d8b4fe;">
+        <div class="node-icon" style="background:#ede9fe;">&#127919;</div>
+        <div><div class="node-label">Meta Ads Optimization</div><div class="node-sublabel">Algorithm optimizes toward revenue</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="callout info">
+    <div class="callout-icon">&#8505;&#65039;</div>
+    <div class="callout-content">
+      <div class="callout-title">Why Both Are Required</div>
+      <div class="callout-body">Meta recommends dual-tracking (pixel + CAPI) simultaneously. The browser pixel captures real-time user signals. The server event captures reliable conversion data regardless of browser restrictions. Event deduplication (Section 6) ensures Meta counts each conversion exactly once.</div>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 2 -->
+<div id="section-2" class="doc-section page-break">
+  <div class="section-header">
+    <a class="section-anchor-link" href="#section-2" title="Link to this section"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></a>
+    <div class="section-num-badge">02</div>
+    <div class="section-title-group">
+      <div class="section-label">Meta Business Suite</div>
+      <h2 class="section-title" onclick="location.href='#section-2'">Confirm the Meta Pixel (Data Set)</h2>
+      <p class="section-desc">Locate and verify the existing Facebook Data Set before any installation begins.</p>
+    </div>
+  </div>
+  <div class="callout warning">
+    <div class="callout-icon">&#9888;&#65039;</div>
+    <div class="callout-content">
+      <div class="callout-title">Before You Begin</div>
+      <div class="callout-body">Confirm you are logged into the <strong>correct Business Manager account</strong> that owns the Ad Account for Pilates x Strength by Monet. Using the wrong account will result in a mismatched Pixel ID sending data to an unrelated dataset.</div>
+    </div>
+  </div>
+  <div class="steps-list">
+    <div class="step-card"><div class="step-num">1</div><div class="step-content"><div class="step-title">Log into Meta Business Manager</div><div class="step-body">Navigate to <strong>business.facebook.com</strong> and sign in with the admin account that manages the client's ad account.</div><span class="step-nav-path">business.facebook.com <span class="nav-arrow">&rarr;</span> Sign In</span></div></div>
+    <div class="step-card"><div class="step-num">2</div><div class="step-content"><div class="step-title">Open Events Manager</div><div class="step-body">From the left sidebar click <strong>All Tools</strong>, then select <strong>Events Manager</strong> under Measure &amp; Report.</div><span class="step-nav-path">Business Suite <span class="nav-arrow">&rarr;</span> All Tools <span class="nav-arrow">&rarr;</span> Events Manager</span></div></div>
+    <div class="step-card"><div class="step-num">3</div><div class="step-content"><div class="step-title">Select the Data Sources Tab</div><div class="step-body">In the Events Manager left sidebar click <strong>Data Sources</strong>. All pixels and datasets connected to this Business Manager will appear.</div><span class="step-nav-path">Events Manager <span class="nav-arrow">&rarr;</span> Data Sources</span></div></div>
+    <div class="step-card"><div class="step-num">4</div><div class="step-content"><div class="step-title">Select the Correct Data Set</div><div class="step-body">Identify the dataset for <strong>Pilates x Strength by Monet</strong>. Click it to open the dataset overview. The Pixel ID / Dataset ID is a 15&ndash;16 digit number shown at the top.</div></div></div>
+    <div class="step-card"><div class="step-num">5</div><div class="step-content"><div class="step-title">Copy and Record the Pixel ID</div><div class="step-body">Copy the <strong>Dataset ID</strong>. Save it in a secure note &mdash; you will need this in Sections 3 and 5.</div></div></div>
+  </div>
+  <div class="screenshot-placeholder">
+    <div class="screenshot-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
+    <div class="screenshot-label">Screenshot Required</div>
+    <div class="screenshot-path">Meta Events Manager &rarr; Data Sources &rarr; [Dataset Name] &rarr; Overview</div>
+  </div>
+  <div class="checklist-box">
+    <div class="checklist-title">Section 2 Verification</div>
+    <div class="checklist-items">
+      <div class="checklist-item"><div class="check-box"></div><span><strong>Data Set located</strong> &mdash; correct dataset visible in Events Manager Data Sources</span></div>
+      <div class="checklist-item"><div class="check-box"></div><span><strong>Pixel ID recorded</strong> &mdash; 15&ndash;16 digit Dataset ID copied and saved securely</span></div>
+      <div class="checklist-item"><div class="check-box"></div><span><strong>Correct Business Manager confirmed</strong> &mdash; dataset belongs to the active client ad account</span></div>
+      <div class="checklist-item"><div class="check-box"></div><span><strong>Dataset status is Active</strong> &mdash; no errors shown in the dataset overview</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 3 -->
+<div id="section-3" class="doc-section page-break">
+  <div class="section-header">
+    <a class="section-anchor-link" href="#section-3" title="Link to this section"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></a>
+    <div class="section-num-badge">03</div>
+    <div class="section-title-group">
+      <div class="section-label">GoHighLevel Setup</div>
+      <h2 class="section-title" onclick="location.href='#section-3'">Install the Meta Pixel in GoHighLevel</h2>
+      <p class="section-desc">Paste the pixel base code into the funnel to enable browser-side event tracking on all pages.</p>
+    </div>
+  </div>
+  <div class="steps-list">
+    <div class="step-card"><div class="step-num">1</div><div class="step-content"><div class="step-title">Copy the Meta Pixel Base Code</div><div class="step-body">In Meta Events Manager, select your Data Set &rarr; <strong>Set up Meta Pixel</strong> &rarr; <strong>Install Code Manually</strong> &rarr; <strong>Copy Code</strong>. Keep this tab open.</div><span class="step-nav-path">Events Manager <span class="nav-arrow">&rarr;</span> Dataset <span class="nav-arrow">&rarr;</span> Set up Pixel <span class="nav-arrow">&rarr;</span> Install Manually <span class="nav-arrow">&rarr;</span> Copy Code</span></div></div>
+    <div class="step-card"><div class="step-num">2</div><div class="step-content"><div class="step-title">Log into GoHighLevel Sub-Account</div><div class="step-body">Navigate to <strong>app.gohighlevel.com</strong> and log into the Sub-Account configured for this client. Do not use the Agency-level account.</div><span class="step-nav-path">app.gohighlevel.com <span class="nav-arrow">&rarr;</span> Client Sub-Account</span></div></div>
+    <div class="step-card"><div class="step-num">3</div><div class="step-content"><div class="step-title">Navigate to Sites &rarr; Funnels</div><div class="step-body">In the left sidebar click <strong>Sites</strong>, then <strong>Funnels</strong>. Locate the funnel connected to the Pilates x Strength by Monet website.</div><span class="step-nav-path">Left Sidebar <span class="nav-arrow">&rarr;</span> Sites <span class="nav-arrow">&rarr;</span> Funnels</span></div></div>
+    <div class="step-card"><div class="step-num">4</div><div class="step-content"><div class="step-title">Open Funnel Settings (Global Head Code)</div><div class="step-body">To apply the pixel across <strong>all funnel steps</strong>, click the funnel name (not a specific step) and open <strong>Settings</strong>. Locate the <strong>Head Tracking Code</strong> field.</div><span class="step-nav-path">Funnel Name <span class="nav-arrow">&rarr;</span> Settings <span class="nav-arrow">&rarr;</span> Head Tracking Code</span></div></div>
+    <div class="step-card"><div class="step-num">5</div><div class="step-content"><div class="step-title">Paste the Pixel Code and Save</div><div class="step-body">Paste the copied Meta Pixel base code into <strong>Head Tracking Code</strong>. Click <strong>Save</strong>. The pixel will load on every page of this funnel.</div></div></div>
+  </div>
+  <div class="subsection-title">Example Meta Pixel Base Code</div>
+  <div class="code-block">
+    <div class="code-header"><div class="code-dots"><div class="code-dot red"></div><div class="code-dot yellow"></div><div class="code-dot green"></div></div><span class="code-filename">meta-pixel-base.html &mdash; paste into Head Tracking Code field</span></div>
+    <div class="code-content"><span class="cm">&lt;!-- Meta Pixel Base Code --&gt;</span>
+&lt;<span class="kw">script</span>&gt;
+!<span class="kw">function</span>(f,b,e,v,n,t,s)
+{<span class="kw">if</span>(f.fbq)<span class="kw">return</span>;n=f.fbq=<span class="kw">function</span>(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)}
+...
+}(window, document,'script',
+'https://connect.facebook.net/en_US/fbevents.js');
+
+<span class="fn">fbq</span>('init', '<span class="st">YOUR_PIXEL_ID_HERE</span>');  <span class="cm">// Replace with your Dataset ID</span>
+<span class="fn">fbq</span>('track', '<span class="st">PageView</span>');
+&lt;/<span class="kw">script</span>&gt;
+
+<span class="cm">&lt;!-- noscript fallback --&gt;</span>
+&lt;<span class="kw">noscript</span>&gt;
+  &lt;img height="1" width="1" style="display:none"
+  src="https://www.facebook.com/tr?id=<span class="st">YOUR_PIXEL_ID_HERE</span>&amp;ev=PageView&amp;noscript=1"/&gt;
+&lt;/<span class="kw">noscript</span>&gt;</div>
+  </div>
+  <div class="screenshot-placeholder">
+    <div class="screenshot-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
+    <div class="screenshot-label">Screenshot Required</div>
+    <div class="screenshot-path">GoHighLevel &rarr; Sites &rarr; Funnels &rarr; [Funnel Name] &rarr; Settings &rarr; Head Tracking Code</div>
+  </div>
+  <div class="callout warning">
+    <div class="callout-icon">&#9888;&#65039;</div>
+    <div class="callout-content">
+      <div class="callout-title">Verify With Meta Pixel Helper</div>
+      <div class="callout-body">Install the <strong>Meta Pixel Helper</strong> Chrome extension. Visit the funnel URL and confirm the extension shows a green pixel with the correct Pixel ID. A red icon or "No Pixel Found" means the code was not saved correctly or is installed at the wrong level (step vs. funnel settings).</div>
+    </div>
+  </div>
+  <div class="checklist-box">
+    <div class="checklist-title">Section 3 Verification</div>
+    <div class="checklist-items">
+      <div class="checklist-item"><div class="check-box"></div><span><strong>Pixel code pasted</strong> &mdash; in Head Tracking Code at funnel level (not step level)</span></div>
+      <div class="checklist-item"><div class="check-box"></div><span><strong>Correct Pixel ID used</strong> &mdash; YOUR_PIXEL_ID_HERE replaced with the Dataset ID from Section 2</span></div>
+      <div class="checklist-item"><div class="check-box"></div><span><strong>PageView fires</strong> &mdash; confirmed via Meta Pixel Helper Chrome extension (green checkmark)</span></div>
+      <div class="checklist-item"><div class="check-box"></div><span><strong>Pixel ID matches Events Manager</strong> &mdash; confirmed in browser extension vs. dataset overview</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 4 -->
+<div id="section-4" class="doc-section page-break">
+  <div class="section-header">
+    <a class="section-anchor-link" href="#section-4" title="Link to this section"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></a>
+    <div class="section-num-badge">04</div>
+    <div class="section-title-group">
+      <div class="section-label">Meta Events Manager</div>
+      <h2 class="section-title" onclick="location.href='#section-4'">Generate the Conversions API Access Token</h2>
+      <p class="section-desc">The access token authenticates GoHighLevel to send server events to Meta on your behalf.</p>
+    </div>
+  </div>
+  <p class="body-text">The CAPI Access Token is a secure credential that authorizes GoHighLevel's servers to post conversion events to your Meta dataset. It is generated once in Meta Events Manager and pasted into each GoHighLevel workflow action.</p>
+  <div class="steps-list">
+    <div class="step-card"><div class="step-num">1</div><div class="step-content"><div class="step-title">Open Meta Events Manager</div><div class="step-body">Navigate to <strong>business.facebook.com &rarr; All Tools &rarr; Events Manager</strong>.</div></div></div>
+    <div class="step-card"><div class="step-num">2</div><div class="step-content"><div class="step-title">Select the Data Set</div><div class="step-body">Click on the Pilates x Strength by Monet dataset in the Data Sources list.</div></div></div>
+    <div class="step-card"><div class="step-num">3</div><div class="step-content"><div class="step-title">Navigate to Settings Tab</div><div class="step-body">Inside the dataset view, click the <strong>Settings</strong> tab at the top.</div><span class="step-nav-path">Dataset <span class="nav-arrow">&rarr;</span> Settings Tab</span></div></div>
+    <div class="step-card"><div class="step-num">4</div><div class="step-content"><div class="step-title">Scroll to Conversions API Section</div><div class="step-body">Scroll down the Settings page to the <strong>Conversions API</strong> section. Locate the <em>Generate access token</em> option.</div><span class="step-nav-path">Settings <span class="nav-arrow">&rarr;</span> Conversions API <span class="nav-arrow">&rarr;</span> Generate Access Token</span></div></div>
+    <div class="step-card"><div class="step-num">5</div><div class="step-content"><div class="step-title">Generate and Copy the Token</div><div class="step-body">Click <strong>Generate Access Token</strong>. A long alphanumeric string will appear. Copy it immediately and store it in a password manager. <strong>This token is only shown once.</strong></div></div></div>
+  </div>
+  <div class="screenshot-placeholder">
+    <div class="screenshot-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
+    <div class="screenshot-label">Screenshot Required</div>
+    <div class="screenshot-path">Events Manager &rarr; [Dataset] &rarr; Settings &rarr; Conversions API &rarr; Generate Access Token</div>
+  </div>
+  <div class="callout critical">
+    <div class="callout-icon">&#128680;</div>
+    <div class="callout-content">
+      <div class="callout-title">Critical: Store the Token Securely</div>
+      <div class="callout-body">The Access Token is a live credential. Anyone who has it can send events to your Meta dataset. <strong>Do not share it in emails, Slack messages, or public documents.</strong> If compromised, return to Events Manager Settings and regenerate a new token &mdash; the old one is immediately invalidated.</div>
+    </div>
+  </div>
+  <div style="background:var(--color-surface-2);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:var(--space-5);margin:var(--space-6) 0;">
+    <div style="font-size:var(--text-xs);font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--color-text-faint);margin-bottom:var(--space-3);">This Token Is Used In</div>
+    <div style="display:flex;flex-direction:column;gap:var(--space-2);">
+      <div style="display:flex;align-items:center;gap:var(--space-3);font-size:var(--text-sm);color:var(--color-text-muted);"><span style="width:6px;height:6px;border-radius:50%;background:var(--color-primary);flex-shrink:0;"></span>Section 5 &mdash; Lead Event Workflow (Facebook Conversion API Action)</div>
+      <div style="display:flex;align-items:center;gap:var(--space-3);font-size:var(--text-sm);color:var(--color-text-muted);"><span style="width:6px;height:6px;border-radius:50%;background:var(--color-primary);flex-shrink:0;"></span>Section 5 &mdash; Schedule / Consultation Workflow</div>
+      <div style="display:flex;align-items:center;gap:var(--space-3);font-size:var(--text-sm);color:var(--color-text-muted);"><span style="width:6px;height:6px;border-radius:50%;background:var(--color-primary);flex-shrink:0;"></span>Section 5 &mdash; Purchase Event Workflow</div>
+      <div style="display:flex;align-items:center;gap:var(--space-3);font-size:var(--text-sm);color:var(--color-text-muted);"><span style="width:6px;height:6px;border-radius:50%;background:var(--color-primary);flex-shrink:0;"></span>Section 9 &mdash; QualifiedLead Workflow</div>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 5 -->
+<div id="section-5" class="doc-section page-break">
+  <div class="section-header">
+    <a class="section-anchor-link" href="#section-5" title="Link to this section"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></a>
+    <div class="section-num-badge">05</div>
+    <div class="section-title-group">
+      <div class="section-label">GoHighLevel Automation</div>
+      <h2 class="section-title" onclick="location.href='#section-5'">Configure GoHighLevel Event Workflows</h2>
+      <p class="section-desc">Three workflows that fire server-side conversion events to Meta via the Conversions API.</p>
+    </div>
+  </div>
+  <div class="callout info">
+    <div class="callout-icon">&#8505;&#65039;</div>
+    <div class="callout-content">
+      <div class="callout-title">GHL Navigation for All Workflows</div>
+      <div class="callout-body">In each workflow: <strong>Automation &rarr; Workflows &rarr; Create Workflow &rarr; Add Action &rarr; Search "Facebook Conversion API"</strong>. Set Event Type to <strong>Funnel Event</strong>. Paste your Access Token and Pixel ID in the respective fields. Save and Publish each workflow when complete.</div>
+    </div>
+  </div>
+  <div class="workflow-card">
+    <div class="workflow-card-header blue"><div class="workflow-icon blue">&#128203;</div><div><div class="workflow-name">Workflow 1 &mdash; Lead Event</div></div><span class="workflow-event-tag tag-blue">Lead</span></div>
+    <div class="workflow-steps">
+      <div class="workflow-step-row"><div class="workflow-step-dot dot-blue"></div><div class="workflow-step-text"><strong>Trigger: Form Submitted</strong>Select the intake / inquiry form. Add a filter to target the specific form name connected to the funnel.</div></div>
+      <div class="workflow-step-row"><div class="workflow-step-dot dot-blue"></div><div class="workflow-step-text"><strong>GHL Navigation</strong>Automation &rarr; Workflows &rarr; Create &rarr; Trigger: Form Submitted &rarr; Add Action: Facebook Conversion API</div></div>
+      <div class="workflow-step-row"><div class="workflow-step-dot dot-blue"></div><div class="workflow-step-text"><strong>CAPI Action Config</strong>Event Name: Lead | event_id: lead_{{contact.id}} | event_source_url: funnel page URL | Value: 1000 (assumed) | Currency: USD | Access Token + Pixel ID</div></div>
+    </div>
+  </div>
+  <div class="workflow-card">
+    <div class="workflow-card-header green"><div class="workflow-icon green">&#128197;</div><div><div class="workflow-name">Workflow 2 &mdash; Schedule (Consultation Booked)</div></div><span class="workflow-event-tag tag-green">Schedule</span></div>
+    <div class="workflow-steps">
+      <div class="workflow-step-row"><div class="workflow-step-dot dot-green"></div><div class="workflow-step-text"><strong>Trigger: Customer Booked Appointment</strong>Select the consultation calendar. Filter to the specific calendar name.</div></div>
+      <div class="workflow-step-row"><div class="workflow-step-dot dot-green"></div><div class="workflow-step-text"><strong>GHL Navigation</strong>Automation &rarr; Workflows &rarr; Create &rarr; Trigger: Customer Booked Appointment &rarr; Add Action: Facebook Conversion API</div></div>
+      <div class="workflow-step-row"><div class="workflow-step-dot dot-green"></div><div class="workflow-step-text"><strong>CAPI Action Config</strong>Event Name: Schedule | event_id: appt_{{appointment.id}} | Currency: USD | Value: assumed consultation fee | Access Token + Pixel ID</div></div>
+    </div>
+  </div>
+  <div class="workflow-card">
+    <div class="workflow-card-header purple"><div class="workflow-icon purple">&#128179;</div><div><div class="workflow-name">Workflow 3 &mdash; Purchase Event</div></div><span class="workflow-event-tag tag-purple">Purchase</span></div>
+    <div class="workflow-steps">
+      <div class="workflow-step-row"><div class="workflow-step-dot dot-purple"></div><div class="workflow-step-text"><strong>Trigger: Order Form Submission</strong>Select the specific order form or payment page. Filter to the correct product or order form name.</div></div>
+      <div class="workflow-step-row"><div class="workflow-step-dot dot-purple"></div><div class="workflow-step-text"><strong>GHL Navigation</strong>Automation &rarr; Workflows &rarr; Create &rarr; Trigger: Order Form Submission &rarr; Add Action: Facebook Conversion API</div></div>
+      <div class="workflow-step-row"><div class="workflow-step-dot dot-purple"></div><div class="workflow-step-text"><strong>CAPI Action Config</strong>Event Name: Purchase | event_id: order_{{order.id}} | Currency: USD | Value: {{order.total}} | Access Token + Pixel ID</div></div>
+    </div>
+  </div>
+  <div class="subsection-title">Required Event Parameters</div>
+  <table class="param-table">
+    <thead><tr><th>Parameter</th><th>Lead</th><th>Schedule</th><th>Purchase</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td><span class="param-key">event_name</span><span class="required-badge">Required</span></td><td>Lead</td><td>Schedule</td><td>Purchase</td><td>Case sensitive &mdash; must match exactly</td></tr>
+      <tr><td><span class="param-key">event_id</span><span class="required-badge">Required</span></td><td>lead_{{contact.id}}</td><td>appt_{{appt.id}}</td><td>order_{{order.id}}</td><td>Used for deduplication (Section 6)</td></tr>
+      <tr><td><span class="param-key">event_source_url</span><span class="required-badge">Required</span></td><td>Form page URL</td><td>Booking page URL</td><td>Checkout page URL</td><td>The page where conversion occurred</td></tr>
+      <tr><td><span class="param-key">currency</span><span class="optional-badge">Recommended</span></td><td>USD</td><td>USD</td><td>USD</td><td>Required when value is included</td></tr>
+      <tr><td><span class="param-key">value</span><span class="optional-badge">Recommended</span></td><td>1000 (assumed)</td><td>Consultation fee</td><td>{{order.total}}</td><td>Assumed values are acceptable for Lead</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- SECTION 6 -->
+<div id="section-6" class="doc-section page-break">
+  <div class="section-header">
+    <a class="section-anchor-link" href="#section-6" title="Link to this section"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></a>
+    <div class="section-num-badge">06</div>
+    <div class="section-title-group">
+      <div class="section-label">Critical Implementation</div>
+      <h2 class="section-title" onclick="location.href='#section-6'">Implement Event Deduplication</h2>
+      <p class="section-desc">The most common tracking configuration error &mdash; and how to prevent inflated conversion counts.</p>
+    </div>
+  </div>
+  <div class="callout critical">
+    <div class="callout-icon">&#128680;</div>
+    <div class="callout-content">
+      <div class="callout-title">The #1 Tracking Mistake</div>
+      <div class="callout-body">When both the browser pixel AND the CAPI server event fire for the same conversion without a shared <strong>event_id</strong>, Meta counts that conversion <strong>twice</strong>. This inflates reported conversions, distorts ROAS, and causes Meta's algorithm to optimize incorrectly. Every browser event and its corresponding server event must share the same event_id.</div>
+    </div>
+  </div>
+  <div class="diagram-wrapper">
+    <div class="diagram-title">Event Deduplication Flow</div>
+    <div class="flow-diagram">
+      <div class="flow-node primary-node" style="max-width:340px;"><div class="node-icon" style="background:#bfdbfe;">&#128100;</div><div><div class="node-label">User Submits Form</div><div class="node-sublabel">Conversion action occurs in browser</div></div></div>
+      <div class="flow-arrow">&#9660;</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-4);width:100%;max-width:560px;">
+        <div style="display:flex;flex-direction:column;align-items:center;">
+          <div class="branch-header branch-browser">&#127760; Browser Path</div>
+          <div class="flow-node" style="min-width:0;"><div><div class="node-label" style="font-size:0.78rem;">Pixel fires Lead event</div><div class="node-sublabel">event_id: "lead_12345"</div></div><span class="node-badge badge-browser">Browser</span></div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;">
+          <div class="branch-header branch-server">&#128187; Server Path</div>
+          <div class="flow-node server-node" style="min-width:0;"><div><div class="node-label" style="font-size:0.78rem;">GHL CAPI fires Lead</div><div class="node-sublabel">event_id: "lead_12345"</div></div><span class="node-badge badge-server">Server</span></div>
+        </div>
+      </div>
+      <div class="flow-arrow">&#9660;</div>
+      <div class="flow-node" style="max-width:360px;background:#fef9c3;border-color:#fcd34d;"><div class="node-icon" style="background:#fef08a;">&#128279;</div><div><div class="node-label">Meta matches event_id: "lead_12345"</div><div class="node-sublabel">Both events share identical event_id</div></div><span class="node-badge badge-dedup">Match</span></div>
+      <div class="flow-arrow">&#9660;</div>
+      <div class="flow-node" style="max-width:300px;background:#f0fdf4;border-color:var(--color-success);"><div class="node-icon" style="background:#bbf7d0;">&#9989;</div><div><div class="node-label">Single Conversion Counted</div><div class="node-sublabel">Deduplication complete &mdash; 1 Lead recorded</div></div></div>
+    </div>
+  </div>
+  <div class="subsection-title">Code Examples</div>
+  <div class="code-block">
+    <div class="code-header"><div class="code-dots"><div class="code-dot red"></div><div class="code-dot yellow"></div><div class="code-dot green"></div></div><span class="code-filename">browser-pixel-event.js &mdash; fires on form submission</span></div>
+    <div class="code-content"><span class="cm">// Generate a unique event ID tied to the contact/session</span>
+<span class="kw">const</span> eventId = 'lead_' + Date.now();
+
+<span class="cm">// Browser pixel fires with the event_id</span>
+<span class="fn">fbq</span>('track', 'Lead', {}, {
+  <span class="nm">eventID</span>: eventId  <span class="cm">// This MUST match the GHL server event_id</span>
+});
+
+<span class="cm">// Schedule / Appointment:</span>
+<span class="fn">fbq</span>('track', 'Schedule', {}, { <span class="nm">eventID</span>: 'appt_12345' });
+
+<span class="cm">// Purchase:</span>
+<span class="fn">fbq</span>('track', 'Purchase', { <span class="nm">value</span>: 197.00, <span class="nm">currency</span>: 'USD' }, { <span class="nm">eventID</span>: 'order_67890' });</div>
+  </div>
+  <div class="code-block">
+    <div class="code-header"><div class="code-dots"><div class="code-dot red"></div><div class="code-dot yellow"></div><div class="code-dot green"></div></div><span class="code-filename">ghl-capi-action-config &mdash; Lead Workflow CAPI Action fields</span></div>
+    <div class="code-content"><span class="cm"># GoHighLevel Facebook Conversion API Action &mdash; Lead Workflow</span>
+
+<span class="kw">Event Name:</span>       <span class="st">Lead</span>
+<span class="kw">Event Type:</span>       <span class="st">Funnel Event</span>
+<span class="nm">event_id:</span>         <span class="st">lead_{{contact.id}}</span>    <span class="cm">MUST match browser event_id format</span>
+<span class="nm">event_source_url:</span> <span class="st">{{funnel.page.url}}</span>
+<span class="nm">value:</span>            <span class="st">1000</span>
+<span class="nm">currency:</span>         <span class="st">USD</span>
+<span class="kw">Access Token:</span>     <span class="st">[CAPI TOKEN FROM SECTION 4]</span>
+<span class="kw">Pixel ID:</span>         <span class="st">[DATASET ID FROM SECTION 2]</span></div>
+  </div>
+  <div class="subsection-title">Deduplication Troubleshooting</div>
+  <table class="diag-table">
+    <thead><tr><th>Issue</th><th>Cause</th><th>Fix</th></tr></thead>
+    <tbody>
+      <tr><td><span class="issue-label">Duplicate Events in Events Manager</span>Browser and server events appear as two separate conversions</td><td>event_id values do not match, or event_id missing from one event</td><td>Ensure browser pixel passes eventID and GHL CAPI passes event_id with identical values for the same conversion</td></tr>
+      <tr><td><span class="issue-label">Inflated Conversion Count</span>More conversions than actual form submissions</td><td>CAPI and browser pixel both firing without deduplication</td><td>Verify event_id is set on both events. Check Events Manager &rarr; Data Quality for deduplication rate</td></tr>
+      <tr><td><span class="issue-label">event_id Format Mismatch</span>Meta fails to merge events</td><td>Different ID formats used (e.g., "lead_123" vs "123")</td><td>Standardize: use lead_{{contact.id}} in GHL and matching format in browser pixel code</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- SECTION 7 -->
+<div id="section-7" class="doc-section page-break">
+  <div class="section-header">
+    <a class="section-anchor-link" href="#section-7" title="Link to this section"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></a>
+    <div class="section-num-badge">07</div>
+    <div class="section-title-group">
+      <div class="section-label">Data Quality</div>
+      <h2 class="section-title" onclick="location.href='#section-7'">Improve Event Match Quality (Advanced Matching)</h2>
+      <p class="section-desc">Send user identifiers with each event so Meta can accurately attribute conversions to the correct ad.</p>
+    </div>
+  </div>
+  <p class="body-text">Meta's Event Match Quality (EMQ) score measures how reliably it can match conversion events to Meta user accounts. A higher EMQ score means more attributed conversions, better audience modeling, and more effective optimization. Including user identifiers dramatically improves this score.</p>
+  <div class="callout success">
+    <div class="callout-icon">&#9989;</div>
+    <div class="callout-content">
+      <div class="callout-title">Why This Matters</div>
+      <div class="callout-body">GoHighLevel's CAPI action collects contact field values automatically. Mapping form fields to Meta parameters takes under 5 minutes and can move your EMQ score from "Poor" to "Great" &mdash; resulting in significantly better attribution and lower CPL over time.</div>
+    </div>
+  </div>
+  <div class="subsection-title">GoHighLevel Field Mapping</div>
+  <table class="param-table">
+    <thead><tr><th>GoHighLevel Field</th><th>Meta Parameter</th><th>GHL Variable</th><th>Priority</th></tr></thead>
+    <tbody>
+      <tr><td>Email Address</td><td><span class="param-key">email</span></td><td><code class="highlight-mono">{{contact.email}}</code></td><td><span class="required-badge">High</span></td></tr>
+      <tr><td>Phone Number</td><td><span class="param-key">phone</span></td><td><code class="highlight-mono">{{contact.phone}}</code></td><td><span class="required-badge">High</span></td></tr>
+      <tr><td>First Name</td><td><span class="param-key">first_name</span></td><td><code class="highlight-mono">{{contact.first_name}}</code></td><td><span class="required-badge">High</span></td></tr>
+      <tr><td>Last Name</td><td><span class="param-key">last_name</span></td><td><code class="highlight-mono">{{contact.last_name}}</code></td><td><span class="required-badge">High</span></td></tr>
+      <tr><td>City</td><td><span class="param-key">city</span></td><td><code class="highlight-mono">{{contact.city}}</code></td><td><span class="optional-badge">Medium</span></td></tr>
+      <tr><td>State</td><td><span class="param-key">state</span></td><td><code class="highlight-mono">{{contact.state}}</code></td><td><span class="optional-badge">Medium</span></td></tr>
+      <tr><td>Zip Code</td><td><span class="param-key">zip</span></td><td><code class="highlight-mono">{{contact.postal_code}}</code></td><td><span class="optional-badge">Medium</span></td></tr>
+      <tr><td>Country</td><td><span class="param-key">country</span></td><td><code class="highlight-mono">{{contact.country}}</code></td><td><span class="optional-badge">Medium</span></td></tr>
+      <tr><td>IP Address</td><td><span class="param-key">client_ip_address</span></td><td><code class="highlight-mono">{{contact.ip_address}}</code></td><td><span class="optional-badge">Medium</span></td></tr>
+      <tr><td>Browser Agent</td><td><span class="param-key">client_user_agent</span></td><td>Passed automatically by GHL</td><td><span class="optional-badge">Auto</span></td></tr>
+      <tr><td>Facebook Click ID</td><td><span class="param-key">fbc</span></td><td><code class="highlight-mono">{{contact.fb_click_id}}</code></td><td><span class="required-badge">High</span></td></tr>
+      <tr><td>Facebook Browser ID</td><td><span class="param-key">fbp</span></td><td>Read from browser cookie</td><td><span class="required-badge">High</span></td></tr>
+    </tbody>
+  </table>
+  <div class="callout warning">
+    <div class="callout-icon">&#9888;&#65039;</div>
+    <div class="callout-content">
+      <div class="callout-title">Hashing Is Automatic</div>
+      <div class="callout-body">GoHighLevel automatically hashes all customer information parameters (email, phone, name) using SHA-256 before transmitting to Meta. <strong>Do not manually hash these values</strong> inside the workflow &mdash; doing so causes double-hashing and the data becomes unreadable by Meta.</div>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 8 -->
+<div id="section-8" class="doc-section page-break">
+  <div class="section-header">
+    <a class="section-anchor-link" href="#section-8" title="Link to this section"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></a>
+    <div class="section-num-badge">08</div>
+    <div class="section-title-group">
+      <div class="section-label">Optimization Strategy</div>
+      <h2 class="section-title" onclick="location.href='#section-8'">Configure Funnel Conversion Signals</h2>
+      <p class="section-desc">Meta learns from the events you send. Signal depth determines what the algorithm optimizes for.</p>
+    </div>
+  </div>
+  <div class="callout critical">
+    <div class="callout-icon">&#128680;</div>
+    <div class="callout-content">
+      <div class="callout-title">Lead-Only Optimization = Low Quality Leads</div>
+      <div class="callout-body">A campaign optimized only for <strong>Lead</strong> events will generate high-volume form submissions &mdash; but Meta has no signal to distinguish which leads become paying clients. Adding <strong>Schedule</strong>, <strong>QualifiedLead</strong>, and <strong>Purchase</strong> events gives Meta the data it needs to find revenue-generating customers specifically.</div>
+    </div>
+  </div>
+  <div class="event-pills">
+    <span class="event-pill pill-lead">Lead</span>
+    <span style="font-size:var(--text-sm);color:var(--color-text-faint);display:flex;align-items:center;">&rarr;</span>
+    <span class="event-pill pill-schedule">Schedule</span>
+    <span style="font-size:var(--text-sm);color:var(--color-text-faint);display:flex;align-items:center;">&rarr;</span>
+    <span class="event-pill pill-qualified">QualifiedLead</span>
+    <span style="font-size:var(--text-sm);color:var(--color-text-faint);display:flex;align-items:center;">&rarr;</span>
+    <span class="event-pill pill-purchase">Purchase</span>
+  </div>
+  <div class="diagram-wrapper">
+    <div class="diagram-title">Funnel Stages &rarr; Conversion Events &rarr; Meta Signal Depth</div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0;">
+      <div style="background:var(--color-primary-light);border:1px solid var(--color-primary-mid);border-right:none;border-radius:var(--radius-md) 0 0 var(--radius-md);padding:var(--space-5) var(--space-4);text-align:center;">
+        <span class="event-pill pill-lead" style="justify-content:center;margin-bottom:var(--space-3);">Lead</span>
+        <div style="font-size:var(--text-xs);font-weight:600;color:var(--color-text);margin-bottom:var(--space-1);">Form Submitted</div>
+        <div style="font-size:var(--text-xs);color:var(--color-text-faint);">Initial interest expressed</div>
+      </div>
+      <div style="background:#f0fdf4;border:1px solid #86efac;border-right:none;border-left:none;padding:var(--space-5) var(--space-4);text-align:center;">
+        <span class="event-pill pill-schedule" style="justify-content:center;margin-bottom:var(--space-3);">Schedule</span>
+        <div style="font-size:var(--text-xs);font-weight:600;color:var(--color-text);margin-bottom:var(--space-1);">Consultation Booked</div>
+        <div style="font-size:var(--text-xs);color:var(--color-text-faint);">Intent to meet confirmed</div>
+      </div>
+      <div style="background:#fefce8;border:1px solid #fde047;border-right:none;border-left:none;padding:var(--space-5) var(--space-4);text-align:center;">
+        <span class="event-pill pill-qualified" style="justify-content:center;margin-bottom:var(--space-3);">QualifiedLead</span>
+        <div style="font-size:var(--text-xs);font-weight:600;color:var(--color-text);margin-bottom:var(--space-1);">Criteria Met</div>
+        <div style="font-size:var(--text-xs);color:var(--color-text-faint);">High-intent verified</div>
+      </div>
+      <div style="background:#faf5ff;border:1px solid #d8b4fe;border-radius:0 var(--radius-md) var(--radius-md) 0;padding:var(--space-5) var(--space-4);text-align:center;">
+        <span class="event-pill pill-purchase" style="justify-content:center;margin-bottom:var(--space-3);">Purchase</span>
+        <div style="font-size:var(--text-xs);font-weight:600;color:var(--color-text);margin-bottom:var(--space-1);">Payment Completed</div>
+        <div style="font-size:var(--text-xs);color:var(--color-text-faint);">Revenue realized</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 9 -->
+<div id="section-9" class="doc-section page-break">
+  <div class="section-header">
+    <a class="section-anchor-link" href="#section-9" title="Link to this section"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></a>
+    <div class="section-num-badge">09</div>
+    <div class="section-title-group">
+      <div class="section-label">Advanced Signal Strategy</div>
+      <h2 class="section-title" onclick="location.href='#section-9'">Sending Qualified Lead Signals</h2>
+      <p class="section-desc">Tell Meta which leads are worth finding more of &mdash; improving lead quality and ROAS.</p>
+    </div>
+  </div>
+  <p class="body-text">The QualifiedLead event fires only when a lead meets specific qualification criteria. This signal is more valuable than a raw Lead event because it represents a smaller, higher-intent audience Meta can model from &mdash; directly improving lead quality over time.</p>
+  <div class="subsection-title">When to Trigger QualifiedLead in GoHighLevel</div>
+  <div class="steps-list">
+    <div class="step-card"><div class="step-num">A</div><div class="step-content"><div class="step-title">Trigger: Consultation Attended</div><div class="step-body">Workflow trigger: Appointment status changes to <strong>Attended / Showed</strong>. This confirms engagement beyond just booking.</div><span class="step-nav-path">Automation <span class="nav-arrow">&rarr;</span> Trigger: Appointment Status Changed <span class="nav-arrow">&rarr;</span> Status: Attended</span></div></div>
+    <div class="step-card"><div class="step-num">B</div><div class="step-content"><div class="step-title">Trigger: Pipeline Stage Updated to "Qualified"</div><div class="step-body">Fire QualifiedLead when a contact's CRM pipeline stage is moved to a designated <strong>Qualified</strong> stage &mdash; manually or via automation.</div><span class="step-nav-path">Automation <span class="nav-arrow">&rarr;</span> Trigger: Pipeline Stage Changed <span class="nav-arrow">&rarr;</span> Stage: Qualified</span></div></div>
+    <div class="step-card"><div class="step-num">C</div><div class="step-content"><div class="step-title">Trigger: Consultation Booked (High Intent)</div><div class="step-body">For tight sales cycles, booking alone may qualify as a QualifiedLead. Use the same trigger as Workflow 2 with a separate CAPI action sending QualifiedLead.</div></div></div>
+  </div>
+  <div class="code-block">
+    <div class="code-header"><div class="code-dots"><div class="code-dot red"></div><div class="code-dot yellow"></div><div class="code-dot green"></div></div><span class="code-filename">ghl-qualified-lead-workflow &mdash; CAPI action configuration</span></div>
+    <div class="code-content"><span class="cm"># GoHighLevel CAPI Action &mdash; QualifiedLead Workflow</span>
+
+<span class="kw">Event Name:</span>   <span class="st">QualifiedLead</span>              <span class="cm">Custom event name</span>
+<span class="kw">Event Type:</span>   <span class="st">Funnel Event</span>
+<span class="nm">event_id:</span>     <span class="st">qualified_{{contact.id}}</span>
+<span class="nm">email:</span>        <span class="st">{{contact.email}}</span>
+<span class="nm">phone:</span>        <span class="st">{{contact.phone}}</span>
+<span class="nm">first_name:</span>   <span class="st">{{contact.first_name}}</span>
+<span class="nm">last_name:</span>    <span class="st">{{contact.last_name}}</span>
+<span class="kw">Access Token:</span> <span class="st">[CAPI TOKEN]</span>
+<span class="kw">Pixel ID:</span>     <span class="st">[DATASET ID]</span></div>
+  </div>
+  <div class="callout info">
+    <div class="callout-icon">&#8505;&#65039;</div>
+    <div class="callout-content">
+      <div class="callout-title">Custom Events in Meta Ads Manager</div>
+      <div class="callout-body">QualifiedLead is a custom event. After firing it, navigate to <strong>Meta Events Manager &rarr; Data Sources &rarr; Custom Events</strong> to confirm it appears. Then configure it as an optimization event in <strong>Ads Manager &rarr; Ad Set &rarr; Conversions &rarr; Custom Events</strong>.</div>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 10 -->
+<div id="section-10" class="doc-section page-break">
+  <div class="section-header">
+    <a class="section-anchor-link" href="#section-10" title="Link to this section"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></a>
+    <div class="section-num-badge">10</div>
+    <div class="section-title-group">
+      <div class="section-label">QA &amp; Validation</div>
+      <h2 class="section-title" onclick="location.href='#section-10'">Testing Events Before Launch</h2>
+      <p class="section-desc">Verify every conversion event fires correctly before activating live campaigns.</p>
+    </div>
+  </div>
+  <div class="steps-list">
+    <div class="step-card"><div class="step-num">1</div><div class="step-content"><div class="step-title">Open Test Events in Meta Events Manager</div><div class="step-body">Navigate to Events Manager &rarr; select your Data Set &rarr; click the <strong>Test Events</strong> tab.</div><span class="step-nav-path">Events Manager <span class="nav-arrow">&rarr;</span> Dataset <span class="nav-arrow">&rarr;</span> Test Events Tab</span></div></div>
+    <div class="step-card"><div class="step-num">2</div><div class="step-content"><div class="step-title">Enter the Funnel URL</div><div class="step-body">In Test Browser Events, enter <strong>https://bejewelled-llama-eaffb5.netlify.app/</strong> and click <strong>Open Website</strong>. Meta opens the URL in a monitored browser session.</div></div></div>
+    <div class="step-card"><div class="step-num">3</div><div class="step-content"><div class="step-title">Submit a Test Form (Lead)</div><div class="step-body">Complete and submit the intake form with test data. Return to Test Events &mdash; confirm a <strong>Lead</strong> event appears under both Browser Events and Server Events.</div></div></div>
+    <div class="step-card"><div class="step-num">4</div><div class="step-content"><div class="step-title">Book a Test Appointment (Schedule)</div><div class="step-body">Book a consultation using the test contact. Confirm a <strong>Schedule</strong> event appears in Test Events under Server Events.</div></div></div>
+    <div class="step-card"><div class="step-num">5</div><div class="step-content"><div class="step-title">Complete a Test Purchase (Purchase)</div><div class="step-body">Submit the order form using Stripe test mode or manually trigger the Purchase workflow for the test contact. Confirm <strong>Purchase</strong> appears in Test Events.</div></div></div>
+  </div>
+  <div class="screenshot-placeholder">
+    <div class="screenshot-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
+    <div class="screenshot-label">Screenshot Required</div>
+    <div class="screenshot-path">Events Manager &rarr; [Dataset] &rarr; Test Events &rarr; All 4 events visible (Lead, Schedule, QualifiedLead, Purchase)</div>
+  </div>
+  <div class="checklist-box">
+    <div class="checklist-title">Test Events Verification</div>
+    <div class="checklist-items">
+      <div class="checklist-item"><div class="check-box"></div><span><strong>PageView fires</strong> &mdash; appears immediately when funnel URL is loaded in Test Events</span></div>
+      <div class="checklist-item"><div class="check-box"></div><span><strong>Lead (browser) fires</strong> &mdash; shown under Browser Events after form submission</span></div>
+      <div class="checklist-item"><div class="check-box"></div><span><strong>Lead (server) fires</strong> &mdash; shown under Server Events, confirming GHL CAPI workflow triggered</span></div>
+      <div class="checklist-item"><div class="check-box"></div><span><strong>Schedule fires (server)</strong> &mdash; confirmed after test appointment booking</span></div>
+      <div class="checklist-item"><div class="check-box"></div><span><strong>Purchase fires (server)</strong> &mdash; confirmed after test order completion</span></div>
+      <div class="checklist-item"><div class="check-box"></div><span><strong>Deduplication confirmed</strong> &mdash; Lead shows as 1 conversion, not 2</span></div>
+      <div class="checklist-item"><div class="check-box"></div><span><strong>Event Match Quality is "Good" or "Great"</strong> &mdash; visible in Events Manager after test events</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 11 -->
+<div id="section-11" class="doc-section page-break">
+  <div class="section-header">
+    <a class="section-anchor-link" href="#section-11" title="Link to this section"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></a>
+    <div class="section-num-badge">11</div>
+    <div class="section-title-group">
+      <div class="section-label">Pre-Launch Gate</div>
+      <h2 class="section-title" onclick="location.href='#section-11'">Launch Checklist</h2>
+      <p class="section-desc">Complete every item before going live. No campaign should activate with unchecked items.</p>
+    </div>
+  </div>
+  <div class="checklist-box">
+    <div class="checklist-title">Meta Pixel &mdash; Browser Tracking</div>
+    <div class="checklist-items">
+      <div class="checklist-item"><div class="check-box"></div><span><strong>Pixel installed</strong> in GoHighLevel funnel Head Tracking Code (funnel-level, not step-level)</span></div>
+      <div class="checklist-item"><div class="check-box"></div><span><strong>Correct Pixel ID</strong> confirmed in code matches the Dataset ID in Meta Events Manager</span></div>
+      <div class="checklist-item"><div class="check-box"></div><span><strong>PageView firing</strong> on all funnel pages &mdash; confirmed via Meta Pixel Helper Chrome extension</span></div>
+      <div class="checklist-item"><div class="check-box"></div><span><strong>Lead browser event fires</strong> on form submission with a valid event_id parameter</span></div>
+    </div>
+  </div>
+  <div class="checklist-box">
+    <div class="checklist-title">Conversions API &mdash; Server Tracking</div>
+    <div class="checklist-items">
+      <div class="checklist-item"><div class="check-box"></div><span><strong>CAPI Access Token generated</strong> in Meta Events Manager and stored securely</span></div>
+      <div class="checklist-item"><div class="check-box"></div><span><strong>Lead workflow created and published</strong> &mdash; trigger: Form Submitted</span></div>
+      <div class="checklist-item"><div class="check-box"></div><span><strong>Schedule workflow created and published</strong> &mdash; trigger: Appointment Booked</span></div>
+      <div class="checklist-item"><div class="check-box"></div><span><strong>Purchase workflow created and published</strong> &mdash; trigger: Order Form Submitted</span></div>
+      <div class="checklist-item"><div class="check-box"></div><span><strong>All workflows confirmed Active</strong> in GoHighLevel Automation</span></div>
+    </div>
+  </div>
+  <div class="checklist-box">
+    <div class="checklist-title">Deduplication &amp; Data Quality</div>
+    <div class="checklist-items">
+      <div class="checklist-item"><div class="check-box"></div><span><strong>event_id configured</strong> in both browser pixel events and GHL CAPI actions using identical format</span></div>
+      <div class="checklist-item"><div class="check-box"></div><span><strong>Advanced matching parameters mapped</strong> &mdash; email, phone, first_name, last_name in all CAPI actions</span></div>
+      <div class="checklist-item"><div class="check-box"></div><span><strong>EMQ score is "Good" or "Great"</strong> &mdash; verified in Events Manager after test events</span></div>
+      <div class="checklist-item"><div class="check-box"></div><span><strong>No deduplication warnings</strong> in Events Manager Diagnostics</span></div>
+    </div>
+  </div>
+  <div class="checklist-box">
+    <div class="checklist-title">Testing &amp; Diagnostics</div>
+    <div class="checklist-items">
+      <div class="checklist-item"><div class="check-box"></div><span><strong>All 4 events confirmed in Test Events</strong> &mdash; Lead, Schedule, QualifiedLead, Purchase</span></div>
+      <div class="checklist-item"><div class="check-box"></div><span><strong>Zero errors in Events Manager Diagnostics</strong> &mdash; no missing parameters, no duplicate events</span></div>
+      <div class="checklist-item"><div class="check-box"></div><span><strong>CAPI events appear within 60 seconds</strong> &mdash; confirmed during test submission</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 12 -->
+<div id="section-12" class="doc-section page-break">
+  <div class="section-header">
+    <a class="section-anchor-link" href="#section-12" title="Link to this section"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></a>
+    <div class="section-num-badge">12</div>
+    <div class="section-title-group">
+      <div class="section-label">Ongoing Health Monitoring</div>
+      <h2 class="section-title" onclick="location.href='#section-12'">Monitoring Diagnostics</h2>
+      <p class="section-desc">Where to check tracking health post-launch and how to resolve the most common issues.</p>
+    </div>
+  </div>
+  <p class="body-text">Events Manager Diagnostics is the primary tool for identifying tracking issues after launch. Check it weekly during the first month of campaign operation. Issues left unresolved degrade ROAS over time as Meta's algorithm receives incomplete signal data.</p>
+  <div class="steps-list">
+    <div class="step-card"><div class="step-num">1</div><div class="step-content"><div class="step-title">Navigate to Diagnostics Tab</div><div class="step-body">In Meta Events Manager, select your dataset, then click the <strong>Diagnostics</strong> tab. Issues are grouped by severity: Errors (red), Warnings (yellow), Suggestions (blue).</div><span class="step-nav-path">Events Manager <span class="nav-arrow">&rarr;</span> Dataset <span class="nav-arrow">&rarr;</span> Diagnostics Tab</span></div></div>
+    <div class="step-card"><div class="step-num">2</div><div class="step-content"><div class="step-title">Review Event Match Quality Scores</div><div class="step-body">Under the <strong>Overview</strong> tab, review EMQ scores for each event type. Scores below 6.0 indicate insufficient customer data. Return to Section 7 to add missing parameters.</div><span class="step-nav-path">Events Manager <span class="nav-arrow">&rarr;</span> Dataset <span class="nav-arrow">&rarr;</span> Overview <span class="nav-arrow">&rarr;</span> Event Match Quality</span></div></div>
+  </div>
+  <div class="subsection-title">Common Issues and Fixes</div>
+  <table class="diag-table">
+    <thead><tr><th>Diagnostic Warning</th><th>Root Cause</th><th>Resolution</th></tr></thead>
+    <tbody>
+      <tr><td><span class="issue-label">Duplicate Events Detected</span>Conversion count higher than actual submissions</td><td>Browser and server events firing without matching event_id, or workflow triggering multiple times</td><td>Add matching event_id to both browser pixel and CAPI action. Check GHL workflow for duplicate triggers &mdash; ensure it fires once per form submission</td></tr>
+      <tr><td><span class="issue-label">Missing Required Parameters</span>event_source_url or event_name absent</td><td>GHL CAPI action not fully configured</td><td>Return to each workflow's CAPI action and add event_source_url using {{funnel.page.url}} or a hardcoded funnel step URL</td></tr>
+      <tr><td><span class="issue-label">Low Event Match Quality (Below 6)</span>EMQ score below acceptable threshold</td><td>Customer information parameters not being sent with events</td><td>Return to Section 7. Map contact fields to Meta parameters in all CAPI workflow actions. Email and phone are the two highest-impact identifiers</td></tr>
+      <tr><td><span class="issue-label">Events Not Received</span>No server events appearing after GHL workflow triggers</td><td>Invalid or expired Access Token, or GHL workflow is not published</td><td>Regenerate Access Token in Events Manager Settings. Confirm workflow status is Published (not Draft) in GoHighLevel Automation. Check workflow activity log for errors</td></tr>
+      <tr><td><span class="issue-label">Deduplication Not Working</span>Both browser and server events counted separately</td><td>event_id format mismatch between browser and server events</td><td>Standardize event_id format using {{contact.id}} in GHL. Verify both events share identical event_id values in the Test Events tool</td></tr>
+    </tbody>
+  </table>
+  <div class="callout info">
+    <div class="callout-icon">&#8505;&#65039;</div>
+    <div class="callout-content">
+      <div class="callout-title">Monitoring Cadence</div>
+      <div class="callout-body"><strong>Weeks 1&ndash;4 post-launch:</strong> Check Diagnostics daily. Confirm all events fire consistently and EMQ scores are stable. <strong>Month 2+:</strong> Weekly checks. If ROAS drops unexpectedly, Diagnostics is the first place to investigate for tracking breakage.</div>
+    </div>
+  </div>
+</div>
+
+<!-- FINAL SECTION -->
+<div id="section-checklist" class="doc-section page-break">
+  <div class="section-header">
+    <a class="section-anchor-link" href="#section-checklist" title="Link to this section"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></a>
+    <div class="section-num-badge">&#10003;</div>
+    <div class="section-title-group">
+      <div class="section-label">Reference Sheet</div>
+      <h2 class="section-title" onclick="location.href='#section-checklist'">Quick Implementation Checklist</h2>
+      <p class="section-desc">One-page condensed reference for use during the implementation process. Complete in order.</p>
+    </div>
+  </div>
+  <div class="final-checklist">
+    <div class="final-checklist-title">Pilates x Strength by Monet &mdash; Implementation Checklist</div>
+    <div class="final-checklist-sub">Complete each item in sequence before advancing to the next phase.</div>
+    <div class="final-check-grid">
+      <div>
+        <div style="font-size:var(--text-xs);font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:rgba(255,255,255,0.35);margin-bottom:var(--space-4);">Phase 1 &mdash; Meta Setup</div>
+        <div class="final-check-item"><div class="final-check-box"></div>Log into correct Business Manager account</div>
+        <div class="final-check-item"><div class="final-check-box"></div>Locate Data Set in Events Manager</div>
+        <div class="final-check-item"><div class="final-check-box"></div>Copy and save Pixel / Dataset ID</div>
+        <div class="final-check-item"><div class="final-check-box"></div>Copy Meta Pixel base code</div>
+        <div class="final-check-item"><div class="final-check-box"></div>Generate CAPI Access Token</div>
+        <div class="final-check-item"><div class="final-check-box"></div>Store token securely (password manager)</div>
+        <br>
+        <div style="font-size:var(--text-xs);font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:rgba(255,255,255,0.35);margin-bottom:var(--space-4);">Phase 2 &mdash; GoHighLevel Install</div>
+        <div class="final-check-item"><div class="final-check-box"></div>Log into correct GHL Sub-Account</div>
+        <div class="final-check-item"><div class="final-check-box"></div>Sites &rarr; Funnels &rarr; [Funnel] &rarr; Settings</div>
+        <div class="final-check-item"><div class="final-check-box"></div>Paste pixel code in Head Tracking Code</div>
+        <div class="final-check-item"><div class="final-check-box"></div>Save and verify with Pixel Helper extension</div>
+      </div>
+      <div>
+        <div style="font-size:var(--text-xs);font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:rgba(255,255,255,0.35);margin-bottom:var(--space-4);">Phase 3 &mdash; CAPI Workflows</div>
+        <div class="final-check-item"><div class="final-check-box"></div>Create Lead Workflow (Form Submitted trigger)</div>
+        <div class="final-check-item"><div class="final-check-box"></div>Create Schedule Workflow (Appt Booked)</div>
+        <div class="final-check-item"><div class="final-check-box"></div>Create Purchase Workflow (Order Form)</div>
+        <div class="final-check-item"><div class="final-check-box"></div>Add CAPI action to each workflow</div>
+        <div class="final-check-item"><div class="final-check-box"></div>Paste Access Token + Pixel ID in each</div>
+        <div class="final-check-item"><div class="final-check-box"></div>Configure event_id for deduplication</div>
+        <div class="final-check-item"><div class="final-check-box"></div>Map contact fields (email, phone, name)</div>
+        <div class="final-check-item"><div class="final-check-box"></div>Publish all workflows</div>
+        <br>
+        <div style="font-size:var(--text-xs);font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:rgba(255,255,255,0.35);margin-bottom:var(--space-4);">Phase 4 &mdash; Test &amp; Launch</div>
+        <div class="final-check-item"><div class="final-check-box"></div>Test all events in Meta Test Events tool</div>
+        <div class="final-check-item"><div class="final-check-box"></div>Confirm Lead, Schedule, Purchase appear</div>
+        <div class="final-check-item"><div class="final-check-box"></div>Verify deduplication (1 Lead, not 2)</div>
+        <div class="final-check-item"><div class="final-check-box"></div>Diagnostics &mdash; zero errors or warnings</div>
+        <div class="final-check-item"><div class="final-check-box"></div>EMQ score confirmed "Good" or "Great"</div>
+        <div class="final-check-item"><div class="final-check-box"></div>&#10003; Ready to launch campaigns</div>
+      </div>
+    </div>
+  </div>
+  <div style="margin-top:var(--space-8);padding:var(--space-6);background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);display:flex;align-items:center;gap:var(--space-4);">
+    <div style="width:40px;height:40px;min-width:40px;background:var(--color-primary-light);border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;font-size:1rem;">&#128222;</div>
+    <div><div style="font-size:var(--text-sm);font-weight:700;color:var(--color-text);margin-bottom:var(--space-1);">Questions During Implementation?</div><div style="font-size:var(--text-sm);color:var(--color-text-muted);">If any step is unclear, escalate before proceeding. Incorrect configuration of the CAPI Access Token or event_id deduplication can cause campaign data issues that are difficult to reverse once live traffic begins.</div></div>
+  </div>
+</div>
+
+</div><!-- end .doc-wrapper -->
+
+<button class="print-btn no-print" onclick="window.print()">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+  Export PDF
+</button>
+
+</body>
+</html>
