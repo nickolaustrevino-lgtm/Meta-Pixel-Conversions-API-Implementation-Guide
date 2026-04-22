@@ -1,687 +1,361 @@
+
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NOWFit × Monet — Meta Tracking Implementation Guide</title>
+<title>Meta Pixel + CAPI Implementation Guide v2.0 — NOWFit × Monet</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-/* ── TOKENS ── */
-:root {
-  --font-body: 'Inter', system-ui, sans-serif;
-  --font-display: 'Instrument Serif', Georgia, serif;
-  --color-bg: #f7f6f2;
-  --color-surface: #ffffff;
-  --color-surface-2: #f3f1ed;
-  --color-border: #e0ddd7;
-  --color-text: #1a1916;
-  --color-text-muted: #6b6a65;
-  --color-text-faint: #a5a39e;
-  --color-accent: #1b6ef3;
-  --color-accent-bg: #eff4ff;
-  --color-accent-dark: #0f4ac6;
-  --color-green: #1a7a4a;
-  --color-green-bg: #edfbf3;
-  --color-orange: #c25a00;
-  --color-orange-bg: #fff4e8;
-  --color-red: #b91c1c;
-  --color-red-bg: #fff1f1;
-  --color-purple: #6b21a8;
-  --color-purple-bg: #f5f0ff;
-  --color-sidebar-w: 260px;
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 16px;
-  --shadow-sm: 0 1px 3px rgba(0,0,0,.07);
-  --shadow-md: 0 4px 14px rgba(0,0,0,.08);
-  --transition: 180ms cubic-bezier(.16,1,.3,1);
+:root{
+  --navy:#0f1b2d;--navy-2:#162236;--navy-3:#1c2d44;--navy-4:#243452;
+  --accent:#2563eb;--accent-light:#3b82f6;--accent-glow:rgba(37,99,235,0.15);
+  --teal:#0ea5e9;--green:#10b981;--green-bg:rgba(16,185,129,0.08);--green-border:rgba(16,185,129,0.25);
+  --amber:#f59e0b;--amber-bg:rgba(245,158,11,0.08);--amber-border:rgba(245,158,11,0.25);
+  --red:#ef4444;--red-bg:rgba(239,68,68,0.08);--red-border:rgba(239,68,68,0.25);
+  --blue-bg:rgba(37,99,235,0.08);--blue-border:rgba(37,99,235,0.25);
+  --purple:#a78bfa;--purple-bg:rgba(167,139,250,0.08);--purple-border:rgba(167,139,250,0.2);
+  --text:#e2e8f0;--text-muted:#94a3b8;--text-faint:#64748b;
+  --border:rgba(255,255,255,0.07);--border-strong:rgba(255,255,255,0.12);
+  --radius:10px;--radius-lg:16px
 }
-[data-theme="dark"] {
-  --color-bg: #141312;
-  --color-surface: #1c1b19;
-  --color-surface-2: #252320;
-  --color-border: #333230;
-  --color-text: #e8e6e1;
-  --color-text-muted: #8a8880;
-  --color-text-faint: #55534f;
-  --color-accent: #5b9cf6;
-  --color-accent-bg: #1a2540;
-  --color-accent-dark: #93beff;
-  --color-green: #4ade80;
-  --color-green-bg: #0f2b1e;
-  --color-orange: #fb923c;
-  --color-orange-bg: #2b1800;
-  --color-red: #f87171;
-  --color-red-bg: #2b0f0f;
-  --color-purple: #c084fc;
-  --color-purple-bg: #1f0a35;
-}
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { scroll-behavior: smooth; scroll-padding-top: 80px; -webkit-font-smoothing: antialiased; }
-body { font-family: var(--font-body); font-size: 15px; line-height: 1.65; color: var(--color-text); background: var(--color-bg); min-height: 100dvh; }
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'Inter',sans-serif;background:var(--navy);color:var(--text);font-size:14px;line-height:1.7;-webkit-font-smoothing:antialiased}
 
-/* ── LAYOUT ── */
-.app { display: flex; min-height: 100dvh; }
-
-/* ── SIDEBAR ── */
-.sidebar {
-  width: var(--color-sidebar-w);
-  min-width: var(--color-sidebar-w);
-  background: var(--color-surface);
-  border-right: 1px solid var(--color-border);
-  position: sticky; top: 0; height: 100dvh;
-  overflow-y: auto; display: flex; flex-direction: column;
-  z-index: 100; transition: transform var(--transition);
-}
-.sidebar-brand {
-  padding: 22px 20px 16px;
-  border-bottom: 1px solid var(--color-border);
-}
-.brand-logo {
-  display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
-}
-.brand-icon {
-  width: 32px; height: 32px; background: var(--color-accent);
-  border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-}
-.brand-icon svg { color: white; }
-.brand-name { font-weight: 700; font-size: 13px; letter-spacing: -.01em; color: var(--color-text); }
-.brand-sub { font-size: 11px; color: var(--color-text-faint); }
-.sidebar-nav { padding: 10px 0 24px; flex: 1; }
-.nav-section-label {
-  font-size: 10px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase;
-  color: var(--color-text-faint); padding: 12px 20px 4px;
-}
-.nav-item {
-  display: flex; align-items: center; gap: 9px;
-  padding: 7px 20px; font-size: 13px; color: var(--color-text-muted);
-  text-decoration: none; cursor: pointer;
-  transition: color var(--transition), background var(--transition);
-  border-radius: 0; border-left: 2px solid transparent; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-.nav-item:hover { color: var(--color-text); background: var(--color-surface-2); }
-.nav-item.active { color: var(--color-accent); background: var(--color-accent-bg); border-left-color: var(--color-accent); font-weight: 600; }
-.nav-num {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 18px; height: 18px; border-radius: 50%; background: var(--color-surface-2);
-  font-size: 10px; font-weight: 700; color: var(--color-text-faint); flex-shrink: 0;
-}
-.nav-item.active .nav-num { background: var(--color-accent); color: white; }
-
-/* ── TOPBAR ── */
-.topbar {
-  position: sticky; top: 0; z-index: 90;
-  background: color-mix(in oklab, var(--color-bg) 80%, transparent);
-  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--color-border);
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 0 32px; height: 56px;
-}
-.topbar-left { display: flex; align-items: center; gap: 12px; }
-.topbar-title { font-size: 14px; font-weight: 600; color: var(--color-text-muted); }
-.topbar-right { display: flex; align-items: center; gap: 10px; }
-.btn-icon {
-  display: flex; align-items: center; justify-content: center; width: 36px; height: 36px;
-  border-radius: var(--radius-sm); background: none; border: 1px solid var(--color-border);
-  color: var(--color-text-muted); cursor: pointer; transition: all var(--transition);
-}
-.btn-icon:hover { background: var(--color-surface-2); color: var(--color-text); }
-.progress-wrap { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--color-text-faint); }
-.progress-bar { width: 120px; height: 4px; background: var(--color-border); border-radius: 99px; overflow: hidden; }
-.progress-fill { height: 100%; background: var(--color-accent); border-radius: 99px; transition: width .4s ease; }
-
-/* ── MAIN CONTENT ── */
-.main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-.content { flex: 1; max-width: 860px; margin: 0 auto; padding: 40px 32px 80px; width: 100%; }
-
-/* ── HERO ── */
-.hero {
-  background: linear-gradient(130deg, #0f2552 0%, #1b4fd8 55%, #1b6ef3 100%);
-  padding: 56px 40px; border-radius: var(--radius-lg); margin-bottom: 40px;
-  position: relative; overflow: hidden;
-}
-.hero::before {
-  content: ''; position: absolute; inset: 0;
-  background: radial-gradient(ellipse at 80% 20%, rgba(255,255,255,.07) 0%, transparent 60%);
-}
-.hero-eyebrow {
-  display: inline-flex; align-items: center; gap: 6px;
-  background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.2);
-  color: rgba(255,255,255,.8); font-size: 11px; font-weight: 600;
-  letter-spacing: .08em; text-transform: uppercase; padding: 4px 12px; border-radius: 99px;
-  margin-bottom: 20px;
-}
-.hero-title {
-  font-family: var(--font-display); font-size: clamp(1.8rem, 3.5vw, 3rem);
-  font-weight: 400; color: #fff; line-height: 1.15; margin-bottom: 16px;
-}
-.hero-title em { font-style: italic; color: rgba(255,255,255,.75); }
-.hero-sub { font-size: 15px; color: rgba(255,255,255,.65); max-width: 500px; line-height: 1.6; margin-bottom: 28px; }
-.hero-meta { display: flex; gap: 20px; flex-wrap: wrap; }
-.hero-chip {
-  display: flex; align-items: center; gap: 6px;
-  font-size: 12px; color: rgba(255,255,255,.7);
-}
-.hero-chip-dot { width: 6px; height: 6px; border-radius: 50%; background: #4ade80; flex-shrink: 0; }
-
-/* ── SECTIONS ── */
-.section { margin-bottom: 56px; scroll-margin-top: 80px; }
-.section-header { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 24px; }
-.section-num {
-  display: inline-flex; align-items: center; justify-content: center;
-  min-width: 32px; height: 32px; border-radius: 8px; background: var(--color-accent-bg);
-  color: var(--color-accent); font-weight: 700; font-size: 13px; flex-shrink: 0; margin-top: 2px;
-}
-.section-title { font-family: var(--font-display); font-size: 1.5rem; font-weight: 400; color: var(--color-text); line-height: 1.2; }
-.section-desc { font-size: 14px; color: var(--color-text-muted); line-height: 1.65; margin-bottom: 20px; }
-
-/* ── STEP CARDS ── */
-.steps { display: flex; flex-direction: column; gap: 2px; margin-bottom: 20px; }
-.step {
-  display: flex; align-items: flex-start; gap: 16px;
-  background: var(--color-surface); border: 1px solid var(--color-border);
-  border-radius: var(--radius-md); padding: 16px 20px;
-  transition: box-shadow var(--transition);
-}
-.step:first-child { border-radius: var(--radius-md) var(--radius-md) var(--radius-sm) var(--radius-sm); }
-.step:last-child { border-radius: var(--radius-sm) var(--radius-sm) var(--radius-md) var(--radius-md); }
-.step:first-child:last-child { border-radius: var(--radius-md); }
-.step:hover { box-shadow: var(--shadow-sm); }
-.step-num {
-  display: inline-flex; align-items: center; justify-content: center;
-  min-width: 26px; height: 26px; border-radius: 50%;
-  background: var(--color-accent); color: white; font-size: 12px; font-weight: 700; flex-shrink: 0;
-}
-.step-body { flex: 1; }
-.step-label { font-size: 13px; font-weight: 600; color: var(--color-text); margin-bottom: 2px; }
-.step-desc { font-size: 13px; color: var(--color-text-muted); line-height: 1.55; }
-.step-path {
-  display: inline-flex; align-items: center; gap: 4px; margin-top: 6px;
-  background: var(--color-surface-2); border-radius: 6px; padding: 3px 8px; font-size: 11px;
-  color: var(--color-text-muted); font-family: monospace;
-}
-.path-sep { color: var(--color-text-faint); margin: 0 1px; }
-
-/* ── CALLOUTS ── */
-.callout {
-  border-radius: var(--radius-md); padding: 14px 18px; margin-bottom: 16px;
-  display: flex; align-items: flex-start; gap: 12px; font-size: 13px; line-height: 1.6;
-  border: 1px solid transparent;
-}
-.callout-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
-.callout-body strong { display: block; font-size: 12px; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; margin-bottom: 3px; }
-.callout.warning { background: var(--color-orange-bg); border-color: var(--color-orange); color: var(--color-orange); }
-.callout.critical { background: var(--color-red-bg); border-color: var(--color-red); color: var(--color-red); }
-.callout.info { background: var(--color-accent-bg); border-color: var(--color-accent); color: var(--color-accent); }
-.callout.success { background: var(--color-green-bg); border-color: var(--color-green); color: var(--color-green); }
-.callout.tip { background: var(--color-purple-bg); border-color: var(--color-purple); color: var(--color-purple); }
-.callout-body, .callout-body p { color: var(--color-text); }
-.callout-body strong { color: inherit; }
-
-/* ── CHECKLIST ── */
-.checklist { list-style: none; display: flex; flex-direction: column; gap: 6px; }
-.checklist li {
-  display: flex; align-items: flex-start; gap: 10px; font-size: 13px; color: var(--color-text);
-  background: var(--color-surface); border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm); padding: 10px 14px; cursor: pointer;
-  transition: all var(--transition); user-select: none;
-}
-.checklist li:hover { background: var(--color-surface-2); }
-.checklist li.checked { opacity: .55; text-decoration: line-through; }
-.check-box {
-  width: 18px; height: 18px; border-radius: 5px; border: 2px solid var(--color-border);
-  flex-shrink: 0; display: flex; align-items: center; justify-content: center;
-  transition: all var(--transition);
-}
-.checklist li.checked .check-box { background: var(--color-green); border-color: var(--color-green); }
-.check-icon { display: none; }
-.checklist li.checked .check-icon { display: block; }
-
-/* ── CODE BLOCKS ── */
-.code-wrap { position: relative; margin-bottom: 16px; }
-.code-label {
-  display: flex; align-items: center; justify-content: space-between;
-  background: #1e1e2e; border-radius: var(--radius-md) var(--radius-md) 0 0;
-  padding: 8px 16px; font-size: 11px; color: #8b8dab; font-family: monospace;
-}
-.copy-btn {
-  background: rgba(255,255,255,.08); border: none; color: #8b8dab;
-  font-size: 11px; cursor: pointer; padding: 2px 8px; border-radius: 4px;
-  transition: all var(--transition); font-family: var(--font-body);
-}
-.copy-btn:hover { background: rgba(255,255,255,.15); color: #fff; }
-.copy-btn.copied { color: #4ade80; }
-pre {
-  background: #1e1e2e; border-radius: 0 0 var(--radius-md) var(--radius-md);
-  padding: 18px 20px; overflow-x: auto; font-size: 12.5px; line-height: 1.6;
-  font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', Consolas, monospace;
-  color: #cdd6f4; tab-size: 2;
-}
-code { font-family: 'SF Mono', 'Cascadia Code', Consolas, monospace; font-size: .9em; }
-p code, li code {
-  background: var(--color-surface-2); border: 1px solid var(--color-border);
-  border-radius: 4px; padding: 1px 5px; color: var(--color-accent); font-size: .85em;
+@media print{
+  body{background:#fff;color:#111;font-size:10.5pt;line-height:1.6}
+  .no-print{display:none!important}
+  .section{page-break-before:always;border:none;background:#fff;padding:40px 0 32px}
+  .cover{page-break-before:avoid;padding:40px 0}
+  pre,code{background:#f3f4f6!important;color:#111!important;border:1px solid #d1d5db!important}
+  .callout{background:#f9fafb!important;border-left:3px solid #999!important;color:#333!important}
+  .callout p{color:#555!important}
+  .step-card{background:#f9fafb!important;border:1px solid #d1d5db!important;color:#111!important}
+  .step-num{background:#e5e7eb!important;border:1px solid #d1d5db!important;color:#374151!important}
+  .step-title{color:#111!important}
+  .step-body{color:#374151!important}
+  .step-body p{color:#374151!important}
+  h2{color:#0f1b2d!important}.section-number{color:#2563eb!important}
+  h3,h4{color:#1f2937!important}
+  table{border-collapse:collapse!important}
+  td,th{border:1px solid #d1d5db!important;padding:6px 10px!important;color:#111!important}
+  th{background:#eff6ff!important;color:#1e40af!important}
+  .diagram{background:#f9fafb!important;border:1px solid #d1d5db!important}
+  .diagram-box{border:1px solid #cbd5e1!important;background:#f3f4f6!important;color:#111!important}
+  .flow-arrow{color:#6b7280!important}
+  .flow-col-label{color:#374151!important;background:#e5e7eb!important;border:1px solid #d1d5db!important}
+  .diagram-title{color:#6b7280!important}
+  .diagram-label{background:#e5e7eb!important;color:#374151!important;border:1px solid #d1d5db!important}
+  .checklist-item{color:#374151!important;border-bottom:1px solid #e5e7eb!important}
+  .checklist-box{border-color:#9ca3af!important}
+  .nav-path{background:#f3f4f6!important;border:1px solid #d1d5db!important;color:#1d4ed8!important}
+  .nav-path span{color:#9ca3af!important}
+  .toc-link{color:#1d4ed8!important;text-decoration:none}
+  .toc-num{color:#9ca3af!important}
+  .toc-list li{border-bottom:1px solid #e5e7eb!important}
+  .agency-logo{background:#f9fafb!important;border:1px solid #d1d5db!important}
+  .logo-text{color:#111!important}.logo-sub{color:#6b7280!important}
+  .logo-mark{background:#2563eb!important}
+  .cover-label{color:#1d4ed8!important}
+  .cover-title{color:#0f1b2d!important}
+  .cover-title span{color:#2563eb!important}
+  .cover-subtitle{color:#374151!important}
+  .meta-pill{background:#f3f4f6!important;border:1px solid #d1d5db!important;color:#374151!important}
+  .meta-pill strong{color:#111!important}
+  .platform-card{background:#eff6ff!important;border:1px solid #bfdbfe!important}
+  .platform-card-label{color:#6b7280!important}
+  .platform-card-value{color:#111!important}
+  .final-checklist{background:#f9fafb!important;border:1px solid #d1d5db!important}
+  .final-checklist h3{color:#374151!important}
+  .stripe-pill{background:#ede9fe!important;border:1px solid #c4b5fd!important;color:#5b21b6!important}
+  .tag-green{background:#dcfce7!important;color:#15803d!important;border:1px solid #bbf7d0!important}
+  .tag-amber{background:#fef9c3!important;color:#a16207!important;border:1px solid #fde68a!important}
+  .tag-blue{background:#eff6ff!important;color:#1d4ed8!important;border:1px solid #bfdbfe!important}
+  .tag-red{background:#fee2e2!important;color:#b91c1c!important;border:1px solid #fecaca!important}
+  .badge-new,.badge-updated,.badge-critical{border:1px solid #d1d5db!important;background:#f3f4f6!important;color:#374151!important}
+  .section-divider{background:#d1d5db!important}
+  p{color:#374151!important}
+  .section-desc{color:#374151!important}
+  .section-intro-box{background:#eff6ff!important;border-left:3px solid #2563eb!important;color:#1e40af!important}
+  .toc{background:#f9fafb!important;border:1px solid #d1d5db!important}
+  .toc-title{color:#6b7280!important}
+  code{background:#f3f4f6!important;color:#1d4ed8!important}
+  pre code{background:none!important;color:inherit!important}
 }
 
-/* ── TABLES ── */
-.table-wrap { overflow-x: auto; margin-bottom: 20px; border: 1px solid var(--color-border); border-radius: var(--radius-md); }
-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-thead { background: var(--color-surface-2); }
-th { padding: 10px 16px; text-align: left; font-weight: 600; font-size: 11px; letter-spacing: .05em; text-transform: uppercase; color: var(--color-text-muted); border-bottom: 1px solid var(--color-border); }
-td { padding: 11px 16px; border-bottom: 1px solid var(--color-border); vertical-align: top; color: var(--color-text); line-height: 1.55; }
-tr:last-child td { border-bottom: none; }
-tr:hover td { background: var(--color-surface-2); }
-.tag {
-  display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 99px;
-  font-size: 11px; font-weight: 600; white-space: nowrap;
-}
-.tag-blue { background: var(--color-accent-bg); color: var(--color-accent); }
-.tag-green { background: var(--color-green-bg); color: var(--color-green); }
-.tag-orange { background: var(--color-orange-bg); color: var(--color-orange); }
-.tag-purple { background: var(--color-purple-bg); color: var(--color-purple); }
-
-/* ── DIAGRAM ── */
-.diagram {
-  background: var(--color-surface); border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg); padding: 28px; margin-bottom: 20px;
-}
-.diagram-title { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; color: var(--color-text-faint); margin-bottom: 20px; }
-.flow { display: flex; flex-direction: column; align-items: center; gap: 0; }
-.flow-node {
-  display: flex; align-items: center; justify-content: center;
-  padding: 10px 20px; border-radius: var(--radius-md); font-size: 13px; font-weight: 600;
-  text-align: center; min-width: 220px; border: 1.5px solid transparent;
-}
-.flow-node.browser { background: var(--color-accent-bg); border-color: var(--color-accent); color: var(--color-accent); }
-.flow-node.server { background: var(--color-green-bg); border-color: var(--color-green); color: var(--color-green); }
-.flow-node.meta { background: #eff0ff; border-color: #4f46e5; color: #4f46e5; }
-.flow-node.neutral { background: var(--color-surface-2); border-color: var(--color-border); color: var(--color-text-muted); }
-.flow-node.dedup { background: var(--color-purple-bg); border-color: var(--color-purple); color: var(--color-purple); }
-.flow-arrow { font-size: 18px; color: var(--color-text-faint); line-height: 1; padding: 3px; }
-.flow-label { font-size: 10px; color: var(--color-text-faint); font-weight: 500; padding: 0 0 4px; }
-.flow-row { display: flex; align-items: center; gap: 16px; width: 100%; justify-content: center; margin: 4px 0; }
-.flow-row-split { display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; align-items: center; width: 100%; margin: 8px 0; }
-.flow-split-label { text-align: center; font-size: 11px; font-weight: 700; color: var(--color-text-faint); text-transform: uppercase; letter-spacing: .05em; }
-
-/* ── EVENT LADDER ── */
-.event-ladder { display: flex; flex-direction: column; gap: 0; margin-bottom: 20px; }
-.event-item {
-  display: flex; align-items: center; gap: 16px;
-  background: var(--color-surface); border: 1px solid var(--color-border);
-  padding: 14px 18px; transition: all var(--transition);
-}
-.event-item:first-child { border-radius: var(--radius-md) var(--radius-md) 0 0; }
-.event-item:last-child { border-radius: 0 0 var(--radius-md) var(--radius-md); border-top: none; }
-.event-item:not(:first-child):not(:last-child) { border-top: none; }
-.event-item:hover { background: var(--color-surface-2); }
-.event-rank {
-  width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center;
-  justify-content: center; font-size: 11px; font-weight: 800; flex-shrink: 0;
-  background: var(--color-surface-2); color: var(--color-text-muted);
-}
-.event-rank.r1 { background: #eff4ff; color: #1b6ef3; }
-.event-rank.r2 { background: #edfbf3; color: #1a7a4a; }
-.event-rank.r3 { background: #f5f0ff; color: #6b21a8; }
-.event-rank.r4 { background: #fff4e8; color: #c25a00; }
-.event-info { flex: 1; }
-.event-name { font-size: 13px; font-weight: 700; color: var(--color-text); margin-bottom: 1px; font-family: monospace; }
-.event-trigger { font-size: 12px; color: var(--color-text-muted); }
-.event-badge .tag { font-size: 10px; }
-
-/* ── PLATFORM CARDS ── */
-.platform-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
-.platform-card {
-  background: var(--color-surface); border: 1px solid var(--color-border);
-  border-radius: var(--radius-md); padding: 18px;
-}
-.platform-card-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-.platform-icon {
-  width: 36px; height: 36px; border-radius: var(--radius-sm);
-  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-}
-.platform-name { font-size: 14px; font-weight: 700; }
-.platform-sub { font-size: 11px; color: var(--color-text-muted); }
-.platform-options { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
-.platform-option {
-  display: flex; align-items: flex-start; gap: 8px; font-size: 12px;
-  color: var(--color-text-muted); padding: 8px 10px; background: var(--color-surface-2);
-  border-radius: var(--radius-sm); line-height: 1.5;
-}
-.platform-option-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--color-accent); flex-shrink: 0; margin-top: 4px; }
-
-/* ── HASH TABLE ── */
-.hash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
-.hash-card { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); overflow: hidden; }
-.hash-card-head { padding: 10px 14px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
-.hash-card.hash { .hash-card-head { background: var(--color-red-bg); color: var(--color-red); } }
-.hash-card.nohash { .hash-card-head { background: var(--color-green-bg); color: var(--color-green); } }
-.hash-card-body { padding: 12px 14px; display: flex; flex-direction: column; gap: 4px; }
-.hash-field { font-size: 12px; font-family: monospace; color: var(--color-text); background: var(--color-surface-2); padding: 4px 8px; border-radius: 4px; }
-/* css nesting workaround */
-.hash-card.hash .hash-card-head { background: var(--color-red-bg); color: var(--color-red); }
-.hash-card.nohash .hash-card-head { background: var(--color-green-bg); color: var(--color-green); }
-
-/* ── DIVIDER ── */
-.divider { border: none; border-top: 1px solid var(--color-border); margin: 32px 0; }
-
-/* ── PROGRESS STATUS ── */
-.status-bar {
-  background: var(--color-surface); border: 1px solid var(--color-border);
-  border-radius: var(--radius-md); padding: 16px 20px; margin-bottom: 20px;
-  display: flex; align-items: center; justify-content: space-between; gap: 16px;
-}
-.status-label { font-size: 13px; font-weight: 600; color: var(--color-text); }
-.status-count { font-size: 13px; color: var(--color-accent); font-weight: 700; }
-.status-bar-track { flex: 1; height: 6px; background: var(--color-surface-2); border-radius: 99px; overflow: hidden; }
-.status-bar-fill { height: 100%; background: var(--color-accent); border-radius: 99px; transition: width .4s; }
-
-/* ── MOBILE ── */
-.hamburger { display: none; }
-.sidebar-overlay { display: none; }
-@media (max-width: 768px) {
-  .sidebar { position: fixed; left: 0; top: 0; transform: translateX(-100%); z-index: 200; }
-  .sidebar.open { transform: translateX(0); box-shadow: 4px 0 24px rgba(0,0,0,.2); }
-  .sidebar-overlay { display: block; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 190; opacity: 0; pointer-events: none; transition: opacity .2s; }
-  .sidebar-overlay.visible { opacity: 1; pointer-events: all; }
-  .hamburger { display: flex; }
-  .platform-grid { grid-template-columns: 1fr; }
-  .hash-grid { grid-template-columns: 1fr; }
-  .content { padding: 24px 18px 64px; }
-}
-
-/* ── PRINT / PDF ── */
-@media print {
-  .sidebar, .topbar { display: none; }
-  .section { break-before: page; }
-  .hero { break-before: avoid; }
-  pre { white-space: pre-wrap; }
-}
+.page-wrap{max-width:880px;margin:0 auto;padding:0 32px 80px}
+.cover{min-height:96vh;display:flex;flex-direction:column;justify-content:center;padding:80px 0 60px;border-bottom:1px solid var(--border);position:relative}
+.cover::before{content:'';position:absolute;top:0;left:-32px;right:-32px;bottom:0;background:radial-gradient(ellipse 60% 50% at 50% 20%,rgba(37,99,235,0.07) 0%,transparent 70%);pointer-events:none}
+.agency-logo{display:inline-flex;align-items:center;gap:10px;padding:10px 18px;border:1px solid var(--border-strong);border-radius:var(--radius);background:var(--navy-2);margin-bottom:56px;width:fit-content}
+.logo-mark{width:32px;height:32px;background:var(--accent);border-radius:7px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:#fff;letter-spacing:-0.5px}
+.logo-text{font-size:13px;font-weight:600;color:var(--text)}.logo-sub{font-size:11px;color:var(--text-muted)}
+.cover-label{font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--accent-light);margin-bottom:14px}
+.cover-title{font-size:36px;font-weight:700;line-height:1.15;color:#fff;margin-bottom:12px;letter-spacing:-0.5px}
+.cover-title span{color:var(--accent-light)}
+.cover-subtitle{font-size:14px;color:var(--text-muted);margin-bottom:36px;max-width:600px;line-height:1.7}
+.cover-meta{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:40px}
+.meta-pill{display:flex;align-items:center;gap:6px;padding:5px 12px;border:1px solid var(--border-strong);border-radius:100px;font-size:12px;color:var(--text-muted);background:var(--navy-2)}
+.meta-pill strong{color:var(--text);font-weight:500}
+.platform-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-bottom:40px}
+.platform-card{padding:14px 18px;border:1px solid var(--border);border-radius:var(--radius);background:var(--navy-2)}
+.platform-card-label{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-faint);margin-bottom:5px}
+.platform-card-value{font-size:12px;font-weight:600;color:var(--text)}
+.toc{padding:24px 28px;border:1px solid var(--border);border-radius:var(--radius-lg);background:var(--navy-2)}
+.toc-title{font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--text-faint);margin-bottom:14px}
+.toc-list{list-style:none}
+.toc-list li{display:flex;align-items:baseline;gap:8px;padding:5px 0;border-bottom:1px solid var(--border)}
+.toc-list li:last-child{border-bottom:none}
+.toc-num{font-size:11px;color:var(--text-faint);width:22px;flex-shrink:0;font-family:'JetBrains Mono',monospace}
+.toc-link{font-size:13px;color:var(--text-muted);text-decoration:none;flex:1}
+.toc-link:hover{color:var(--accent-light)}
+.toc-badge{font-size:10px;padding:2px 7px;border-radius:100px;font-weight:600}
+.badge-new{background:rgba(16,185,129,0.12);color:var(--green);border:1px solid var(--green-border)}
+.badge-updated{background:var(--blue-bg);color:var(--accent-light);border:1px solid var(--blue-border)}
+.badge-critical{background:var(--red-bg);color:var(--red);border:1px solid var(--red-border)}
+.section{padding:60px 0 44px;border-bottom:1px solid var(--border)}
+.section:last-child{border-bottom:none}
+.section-eyebrow{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.section-number{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--accent-light);font-weight:500;letter-spacing:1px}
+.section-divider{height:1px;flex:1;background:var(--border)}
+h2{font-size:22px;font-weight:700;color:#fff;margin-bottom:8px;letter-spacing:-0.3px}
+.section-desc{font-size:13px;color:var(--text-muted);margin-bottom:28px;max-width:680px}
+h3{font-size:14px;font-weight:600;color:var(--text);margin:24px 0 10px}
+h4{font-size:11px;font-weight:600;color:var(--text-muted);margin:18px 0 8px;text-transform:uppercase;letter-spacing:0.8px}
+p{margin-bottom:12px;color:var(--text-muted);font-size:13px}
+p:last-child{margin-bottom:0}
+.steps{display:flex;flex-direction:column;gap:2px;margin-bottom:4px}
+.step-card{display:grid;grid-template-columns:36px 1fr;gap:14px;padding:16px 18px;background:var(--navy-2);border:1px solid var(--border);border-radius:4px;align-items:start}
+.step-card:first-child{border-radius:var(--radius) var(--radius) 4px 4px}
+.step-card:last-child{border-radius:4px 4px var(--radius) var(--radius)}
+.step-card:only-child{border-radius:var(--radius)}
+.step-num{width:26px;height:26px;background:var(--accent-glow);border:1px solid var(--blue-border);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--accent-light);flex-shrink:0;margin-top:1px}
+.step-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px}
+.step-body{font-size:12px;color:var(--text-muted);line-height:1.65}
+.step-body p{font-size:12px;margin-bottom:6px}
+.nav-path{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;background:var(--navy-3);border:1px solid var(--border);border-radius:5px;font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--teal);margin-top:6px;flex-wrap:wrap}
+.nav-path span{color:var(--text-faint)}
+.callout{display:flex;gap:12px;padding:14px 18px;border-radius:var(--radius);border-left:3px solid;margin:18px 0;font-size:13px;line-height:1.6}
+.callout-icon{font-size:15px;flex-shrink:0;margin-top:1px}
+.callout-body{flex:1}
+.callout-body strong{font-weight:600;display:block;margin-bottom:3px;font-size:13px}
+.callout-body p{font-size:12px;margin-bottom:0}
+.callout.warning{background:var(--amber-bg);border-color:var(--amber);color:#fbbf24}
+.callout.warning p{color:#fcd34d}
+.callout.critical{background:var(--red-bg);border-color:var(--red);color:#f87171}
+.callout.critical p{color:#fca5a5}
+.callout.info{background:var(--blue-bg);border-color:var(--accent);color:var(--accent-light)}
+.callout.info p{color:#93c5fd}
+.callout.success{background:var(--green-bg);border-color:var(--green);color:var(--green)}
+.callout.success p{color:#6ee7b7}
+.callout.stripe{background:var(--purple-bg);border-color:var(--purple);color:var(--purple)}
+.callout.stripe p{color:#c4b5fd}
+pre{background:#080e18;border:1px solid var(--border);border-radius:var(--radius);padding:18px 22px;overflow-x:auto;margin:14px 0;font-family:'JetBrains Mono',monospace;font-size:11.5px;line-height:1.9;color:#a8d8ff}
+.code-label{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-faint);margin-bottom:4px;font-family:'JetBrains Mono',monospace}
+code{font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#93c5fd;background:rgba(147,197,253,0.08);padding:1px 5px;border-radius:4px}
+pre code{background:none;padding:0;color:inherit}
+.hl-comment{color:#3d6080}.hl-key{color:#e879f9}.hl-string{color:#86efac}.hl-num{color:#fbbf24}.hl-fn{color:#60a5fa}
+.checklist{list-style:none;margin:14px 0}
+.checklist-item{display:flex;align-items:flex-start;gap:10px;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px;color:var(--text-muted)}
+.checklist-item:last-child{border-bottom:none}
+.checklist-box{width:15px;height:15px;border:1.5px solid var(--border-strong);border-radius:4px;flex-shrink:0;margin-top:2px}
+table{width:100%;border-collapse:collapse;margin:14px 0}
+th{background:var(--navy-3);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;color:var(--text-faint);padding:9px 12px;text-align:left;border-bottom:1px solid var(--border-strong)}
+td{padding:9px 12px;font-size:12px;color:var(--text-muted);border-bottom:1px solid var(--border);vertical-align:top}
+tr:last-child td{border-bottom:none}
+.tag{display:inline-block;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:500}
+.tag-green{background:var(--green-bg);color:var(--green);border:1px solid var(--green-border)}
+.tag-amber{background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-border)}
+.tag-blue{background:var(--blue-bg);color:var(--accent-light);border:1px solid var(--blue-border)}
+.tag-red{background:var(--red-bg);color:var(--red);border:1px solid var(--red-border)}
+.tag-purple{background:var(--purple-bg);color:var(--purple);border:1px solid var(--purple-border)}
+.diagram{background:var(--navy-2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px 28px;margin:18px 0}
+.diagram-title{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-faint);margin-bottom:20px}
+.flow{display:flex;flex-direction:column;align-items:center;gap:0}
+.flow-col-label{text-align:center;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;font-weight:600;padding:5px 10px;border-radius:4px;margin-bottom:10px}
+.col-browser{color:#60a5fa;background:rgba(96,165,250,0.08);border:1px solid rgba(96,165,250,0.18)}
+.col-server{color:#34d399;background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.18)}
+.col-meta{color:#c084fc;background:rgba(192,132,252,0.08);border:1px solid rgba(192,132,252,0.18)}
+.diagram-box{padding:9px 14px;border-radius:7px;font-size:11.5px;font-weight:500;text-align:center;width:100%}
+.box-blue{background:rgba(96,165,250,0.1);border:1px solid rgba(96,165,250,0.22);color:#93c5fd}
+.box-green{background:rgba(52,211,153,0.1);border:1px solid rgba(52,211,153,0.22);color:#6ee7b7}
+.box-purple{background:rgba(192,132,252,0.1);border:1px solid rgba(192,132,252,0.22);color:#d8b4fe}
+.box-amber{background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.22);color:#fde68a}
+.box-neutral{background:var(--navy-3);border:1px solid var(--border);color:var(--text-muted)}
+.box-accent{background:var(--blue-bg);border:1px solid var(--blue-border);color:#93c5fd}
+.box-stripe{background:var(--purple-bg);border:1px solid var(--purple-border);color:#c4b5fd}
+.flow-arrow{font-size:16px;color:var(--text-faint);line-height:1;margin:3px 0}
+.diagram-label{display:inline-block;font-size:10px;font-family:'JetBrains Mono',monospace;padding:2px 6px;background:var(--navy-3);border:1px solid var(--border);border-radius:4px;color:var(--text-faint);margin-top:3px}
+.stripe-pill{display:inline-flex;align-items:center;gap:4px;padding:2px 9px;background:var(--purple-bg);border:1px solid var(--purple-border);border-radius:100px;font-size:11px;font-weight:600;color:var(--purple)}
+.final-checklist{background:var(--navy-2);border:1px solid var(--border-strong);border-radius:var(--radius-lg);padding:32px 36px;margin-top:28px}
+.final-checklist h3{font-size:13px;margin:20px 0 10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px}
+.final-checklist h3:first-child{margin-top:0}
+.check-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+@media(max-width:600px){.check-grid{grid-template-columns:1fr}}
+.pdf-btn{position:fixed;bottom:24px;right:24px;display:flex;align-items:center;gap:8px;padding:11px 18px;background:var(--accent);color:#fff;border:none;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 4px 20px rgba(37,99,235,0.35);font-family:'Inter',sans-serif;transition:background 0.15s,transform 0.1s;z-index:100}
+.pdf-btn:hover{background:var(--accent-light);transform:translateY(-1px)}
+.screenshot-placeholder{display:flex;align-items:center;justify-content:center;height:56px;border:1.5px dashed var(--border-strong);border-radius:var(--radius);font-size:11px;color:var(--text-faint);font-family:'JetBrains Mono',monospace;margin:10px 0;letter-spacing:0.5px}
+.changed-badge{display:inline-block;padding:2px 7px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.2);border-radius:4px;font-size:10px;font-weight:600;color:var(--green);letter-spacing:0.5px;margin-left:8px;vertical-align:middle}
+.section-intro-box{padding:14px 18px;border-left:3px solid var(--accent);background:var(--blue-bg);border-radius:0 var(--radius) var(--radius) 0;margin-bottom:24px;font-size:12px;color:#93c5fd;line-height:1.65}
+.phase-header{display:flex;align-items:center;gap:10px;margin:24px 0 8px}
+.phase-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.phase-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:560px){.two-col{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
+<button class="pdf-btn no-print" onclick="window.print()">&#x2193; Export PDF</button>
+<div class="page-wrap">
 
-<div class="sidebar-overlay" id="overlay" onclick="closeSidebar()"></div>
+<!-- COVER -->
+<section class="cover" id="cover">
+<div class="agency-logo">
+  <div class="logo-mark">NF</div>
+  <div><div class="logo-text">NOWFit Agency</div><div class="logo-sub">Performance Marketing</div></div>
+</div>
+<div class="cover-label">Client Implementation Guide &#8212; v2.0 &#8212; April 2026</div>
+<h1 class="cover-title">Meta Pixel +<br><span>Conversions API</span><br>Implementation Guide</h1>
+<p class="cover-subtitle">Full server-side tracking via Stripe for Pilates x Strength by Monet. This version reflects the confirmed NowFit platform architecture: GoHighLevel is removed as a CAPI event source. Stripe is the authoritative conversion signal engine. This guide covers everything from initial Meta setup through Stripe webhook configuration and live launch verification.</p>
+<div class="cover-meta">
+  <div class="meta-pill">&#127919; <strong>Client:</strong> Pilates x Strength by Monet</div>
+  <div class="meta-pill">&#127970; <strong>Managed by:</strong> NOWFit Agency</div>
+  <div class="meta-pill">&#128197; <strong>Go-Live Target:</strong> May 6, 2026</div>
+  <div class="meta-pill">&#128260; <strong>Version:</strong> 2.0 &#8212; Stripe Architecture</div>
+</div>
+<div class="platform-grid">
+  <div class="platform-card"><div class="platform-card-label">Ad Platform</div><div class="platform-card-value">Meta Ads (Facebook / Instagram)</div></div>
+  <div class="platform-card"><div class="platform-card-label">Website</div><div class="platform-card-value">Static HTML &#8212; Cloudflare / Netlify</div></div>
+  <div class="platform-card"><div class="platform-card-label">Payment + CAPI Source</div><div class="platform-card-value">Stripe (NowFit Connected Account)</div></div>
+  <div class="platform-card"><div class="platform-card-label">CRM</div><div class="platform-card-value">NowFit Platform (primary) / GHL (phone system only)</div></div>
+</div>
+<div class="toc">
+  <div class="toc-title">Table of Contents</div>
+  <ul class="toc-list">
+    <li><span class="toc-num">01</span><a class="toc-link" href="#s1">Architecture Overview &amp; Platform Roles</a><span class="toc-badge badge-updated">Updated</span></li>
+    <li><span class="toc-num">02</span><a class="toc-link" href="#s2">Confirm Meta Pixel &amp; Data Set</a></li>
+    <li><span class="toc-num">03</span><a class="toc-link" href="#s3">Install Pixel on HTML Site (Cloudflare / Netlify)</a><span class="toc-badge badge-updated">Updated</span></li>
+    <li><span class="toc-num">04</span><a class="toc-link" href="#s4">Generate CAPI Access Token</a></li>
+    <li><span class="toc-num">05</span><a class="toc-link" href="#s5">Configure Stripe Webhooks for CAPI</a><span class="toc-badge badge-new">New</span></li>
+    <li><span class="toc-num">06</span><a class="toc-link" href="#s6">Event Deduplication &#8212; Stripe + Pixel</a><span class="toc-badge badge-critical">Critical</span></li>
+    <li><span class="toc-num">07</span><a class="toc-link" href="#s7">Advanced Matching: fbc, fbp, and Customer PII</a><span class="toc-badge badge-updated">Updated</span></li>
+    <li><span class="toc-num">08</span><a class="toc-link" href="#s8">GoHighLevel Calendar &#8212; Scoped Browser Event (Optional)</a><span class="toc-badge badge-updated">Updated</span></li>
+    <li><span class="toc-num">09</span><a class="toc-link" href="#s9">Conversion Funnel Signal Strategy</a></li>
+    <li><span class="toc-num">10</span><a class="toc-link" href="#s10">Testing Events &#8212; Sandbox Verification</a></li>
+    <li><span class="toc-num">11</span><a class="toc-link" href="#s11">Diagnostics &amp; Ongoing Monitoring</a></li>
+    <li><span class="toc-num">12</span><a class="toc-link" href="#s12">Launch Checklist &#8212; Pre-May 6</a></li>
+  </ul>
+</div>
+</section>
 
-<div class="app">
-<!-- SIDEBAR -->
-<nav class="sidebar" id="sidebar" aria-label="Navigation">
-  <div class="sidebar-brand">
-    <div class="brand-logo">
-      <div class="brand-icon">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+<!-- S1 -->
+<section class="section" id="s1">
+<div class="section-eyebrow"><span class="section-number">SECTION 01</span><div class="section-divider"></div></div>
+<h2>Architecture Overview &amp; Platform Roles <span class="changed-badge">Updated</span></h2>
+<p class="section-desc">What changed from the GoHighLevel-based setup, why Stripe is the correct CAPI source, and how each platform fits into the tracking stack.</p>
+
+<div class="callout stripe">
+  <span class="callout-icon">&#9889;</span>
+  <div class="callout-body"><strong>v2.0 Key Change: GoHighLevel Removed as CAPI Trigger</strong><p>GoHighLevel is the NowFit phone system and a supplementary sales CRM. It is not where payments occur, and it is not where CAPI events should originate. All client payments run through Stripe via the NowFit proprietary platform. Stripe is the sole authoritative CAPI source for Purchase events. This is simpler, more accurate, and does not require GoHighLevel automation workflows.</p></div>
+</div>
+
+<h3>What the Meta Pixel Does</h3>
+<p>The Meta Pixel is a JavaScript snippet embedded in the <code>&lt;head&gt;</code> of Monet's HTML site. It fires browser-side events (PageView, Lead, Purchase) directly from the visitor's browser to Meta's servers. Browser events capture top-of-funnel behavior and can be affected by ad blockers or iOS privacy restrictions.</p>
+
+<h3>What Conversions API Does</h3>
+<p>The Meta Conversions API (CAPI) sends events server-to-server, bypassing the browser entirely. In this architecture, the NowFit development team configures a Stripe webhook listener. When Monet's client completes payment in Stripe, the webhook fires and NowFit's server immediately sends a verified Purchase event to Meta via CAPI, including full customer data and revenue value.</p>
+
+<h3>Why Both Are Required</h3>
+<p>Pixel handles top-of-funnel behavior. Stripe CAPI delivers the verified bottom-of-funnel signal with payment-confirmed data. Running both together (hybrid tracking) maximizes signal coverage. Deduplication via a shared <code>event_id</code> ensures Meta counts each conversion exactly once.</p>
+
+<div class="diagram">
+  <div class="diagram-title">Full Tracking Architecture &#8212; NowFit / Monet Stack</div>
+  <div class="flow">
+    <div class="diagram-box box-blue" style="width:380px">&#127760; Monet's Website &#8212; Static HTML (Cloudflare / Netlify)</div>
+    <div class="flow-arrow">&#8595;</div>
+    <div style="display:flex;gap:32px;width:100%;justify-content:center;align-items:flex-start">
+      <div class="flow" style="align-items:center;width:44%">
+        <div class="flow-col-label col-browser" style="width:100%">Browser Events (Pixel)</div>
+        <div class="diagram-box box-blue" style="width:100%">Pixel fires PageView on load</div>
+        <div class="flow-arrow">&#8595;</div>
+        <div class="diagram-box box-blue" style="width:100%">Lead fires on form submit<br><span class="diagram-label">eventID: lead_xxx</span></div>
+        <div class="flow-arrow">&#8595;</div>
+        <div class="diagram-box box-blue" style="width:100%">Purchase fires on confirmation page<br><span class="diagram-label">eventID: cs_live_xxx (Stripe session ID)</span></div>
       </div>
-      <div>
-        <div class="brand-name">NOWFit × Monet</div>
-        <div class="brand-sub">Tracking Implementation Guide</div>
+      <div class="flow" style="align-items:center;width:44%">
+        <div class="flow-col-label col-server" style="width:100%">Server Events (CAPI via Stripe)</div>
+        <div class="diagram-box box-stripe" style="width:100%">Client pays &#8212; <span class="stripe-pill">&#9889; Stripe</span> confirmed</div>
+        <div class="flow-arrow">&#8595;</div>
+        <div class="diagram-box box-green" style="width:100%">checkout.session.completed fires</div>
+        <div class="flow-arrow">&#8595;</div>
+        <div class="diagram-box box-green" style="width:100%">NowFit server &#8594; CAPI Purchase<br><span class="diagram-label">event_id: cs_live_xxx</span></div>
       </div>
     </div>
+    <div class="flow-arrow">&#8595;</div>
+    <div class="diagram-box box-purple" style="width:380px">Meta Events Manager &#8212; Deduplication &#8594; 1 Purchase</div>
+    <div class="flow-arrow">&#8595;</div>
+    <div class="diagram-box box-accent" style="width:380px">Meta Ads &#8212; Revenue Optimization + Audience Building</div>
   </div>
-  <div class="sidebar-nav" id="nav-links">
-    <div class="nav-section-label">Overview</div>
-    <a class="nav-item active" href="#overview" onclick="setActive(this)">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-      Overview
-    </a>
-    <a class="nav-item" href="#scope" onclick="setActive(this)">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      Tracking Scope
-    </a>
-    <a class="nav-item" href="#event-map" onclick="setActive(this)">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-      Funnel Event Map
-    </a>
-    <div class="nav-section-label">Setup Steps</div>
-    <a class="nav-item" href="#s1" onclick="setActive(this)"><span class="nav-num">1</span> Confirm Data Set</a>
-    <a class="nav-item" href="#s2" onclick="setActive(this)"><span class="nav-num">2</span> Install Browser Pixel</a>
-    <a class="nav-item" href="#s3" onclick="setActive(this)"><span class="nav-num">3</span> CAPI Access Token</a>
-    <a class="nav-item" href="#s4" onclick="setActive(this)"><span class="nav-num">4</span> Configure Server Events</a>
-    <a class="nav-item" href="#s5" onclick="setActive(this)"><span class="nav-num">5</span> Event Deduplication</a>
-    <a class="nav-item" href="#s6" onclick="setActive(this)"><span class="nav-num">6</span> Advanced Matching</a>
-    <a class="nav-item" href="#s7" onclick="setActive(this)"><span class="nav-num">7</span> Signal Quality</a>
-    <a class="nav-item" href="#s8" onclick="setActive(this)"><span class="nav-num">8</span> Testing Protocol</a>
-    <a class="nav-item" href="#s9" onclick="setActive(this)"><span class="nav-num">9</span> Diagnostics</a>
-    <div class="nav-section-label">Final</div>
-    <a class="nav-item" href="#checklist" onclick="setActive(this)">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-      Launch Checklist
-    </a>
-  </div>
-</nav>
+</div>
 
-<!-- MAIN -->
-<div class="main">
-  <!-- TOPBAR -->
-  <header class="topbar">
-    <div class="topbar-left">
-      <button class="btn-icon hamburger" onclick="openSidebar()" aria-label="Open menu">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-      </button>
-      <span class="topbar-title">Meta Pixel + CAPI Implementation Guide</span>
-    </div>
-    <div class="topbar-right">
-      <div class="progress-wrap">
-        <span id="progress-label">0 / 0 completed</span>
-        <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
-      </div>
-      <button class="btn-icon" onclick="toggleTheme()" data-theme-toggle aria-label="Toggle theme">
-        <svg id="theme-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-      </button>
-    </div>
-  </header>
+<h3>Platform Roles at a Glance</h3>
+<table>
+  <thead><tr><th>Platform</th><th>Role</th><th>Sends CAPI Events?</th></tr></thead>
+  <tbody>
+    <tr><td><strong>HTML Site</strong><br><span style="font-size:11px;color:var(--text-faint)">Cloudflare / Netlify</span></td><td>Hosts Monet's website. Pixel base code in <code>&lt;head&gt;</code>. Fires browser Lead, PageView, and Purchase confirmation events.</td><td><span class="tag tag-blue">Browser only</span></td></tr>
+    <tr><td><span class="stripe-pill">&#9889; Stripe</span><br><span style="font-size:11px;color:var(--text-faint)">Connected Account per Coach</span></td><td>All payments flow here. Monet will have her own Stripe connected account under NowFit's platform account. <code>checkout.session.completed</code> webhook triggers CAPI.</td><td><span class="tag tag-green">Yes &#8212; CAPI Source</span></td></tr>
+    <tr><td><strong>NowFit Platform</strong><br><span style="font-size:11px;color:var(--text-faint)">Proprietary SaaS</span></td><td>CRM, stage management, Stripe integration. Dev team (CTO in Bangalore) implements webhook listener and CAPI payload. Sales team marks lead stages manually for now.</td><td><span class="tag tag-green">Via Stripe webhook</span></td></tr>
+    <tr><td><strong>GoHighLevel</strong></td><td>Phone system only. Used for inbound/outbound calls and SMS. Also hosts the calendar booking widget (optional Schedule pixel). Not the payments CRM &#8212; not used for CAPI.</td><td><span class="tag tag-amber">Optional / Browser only</span></td></tr>
+  </tbody>
+</table>
+</section>
 
-  <!-- CONTENT -->
-  <div class="content">
+<!-- S2 -->
+<section class="section" id="s2">
+<div class="section-eyebrow"><span class="section-number">SECTION 02</span><div class="section-divider"></div></div>
+<h2>Confirm Meta Pixel &amp; Data Set</h2>
+<p class="section-desc">NOWFit maintains one master CAPI dataset in the agency Business Manager. Each coach gets their own pixel (data source) that connects to it. Confirm Monet's pixel exists before installation.</p>
 
-    <!-- HERO -->
-    <section class="hero">
-      <div class="hero-eyebrow">
-        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/></svg>
-        Client Implementation Guide
-      </div>
-      <h1 class="hero-title">Meta Pixel + Conversions API<br><em>for Pilates x Strength by Monet</em></h1>
-      <p class="hero-sub">A comprehensive, platform-specific tracking guide for NOWFit to deploy and manage Monet's Meta tracking across WordPress and Netlify surfaces.</p>
-      <div class="hero-meta">
-        <div class="hero-chip"><span class="hero-chip-dot"></span> Dataset: NOWFit Master Dataset</div>
-        <div class="hero-chip"><span class="hero-chip-dot" style="background:#facc15"></span> Pixel ID: 3015982851929798</div>
-        <div class="hero-chip"><span class="hero-chip-dot" style="background:#c084fc"></span> April 2026</div>
-      </div>
-      <div style="margin-top:24px;padding-top:20px;border-top:1px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
-        <span style="font-size:12px;color:rgba(255,255,255,.65);">Prepared by: <strong style="color:rgba(255,255,255,.9);font-weight:600;">Nickolaus Trevino</strong></span>
-        <span style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,60,60,.18);border:1px solid rgba(255,100,100,.35);color:#fca5a5;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:4px 12px;border-radius:99px;">
-          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-          Confidential
-        </span>
-      </div>
-    </section>
+<div class="callout info">
+  <span class="callout-icon">&#127970;</span>
+  <div class="callout-body"><strong>Master Dataset Architecture</strong><p>One master CAPI dataset &#8212; all coaches feed into it. Each coach has an individual pixel scoped to their own domain only. This dataset is the "golden record" for attribution across all NowFit coaches in paid marketing. Setup is one-time per agency. Monet's individual pixel is created per these steps if it doesn't exist yet.</p></div>
+</div>
 
-    <!-- OVERVIEW -->
-    <section class="section" id="overview">
-      <div class="section-header">
-        <div class="section-num">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-        </div>
-        <h2 class="section-title">Overview</h2>
-      </div>
-      <p class="section-desc">This guide combines the Netlify and WordPress implementation strategies into a single client-facing manual for NOWFit. The goal is one consistent tracking framework across all of Monet's acquisition surfaces: confirm the correct Meta data set, install the browser pixel, configure Conversions API server events, deduplicate signals using matching <code>event_id</code>s, test the full funnel, and monitor diagnostics post-launch.</p>
-      <div class="callout info">
-        <span class="callout-icon">ℹ️</span>
-        <div class="callout-body"><strong>Who This Is For</strong>NOWFit as the implementation owner, and Monet's team as the operational reviewer. Use this when confirming data set setup, installing tracking, configuring events, or troubleshooting diagnostics.</div>
-      </div>
-      <div class="diagram">
-        <div class="diagram-title">Tracking Architecture — Data Flow</div>
-        <div class="flow">
-          <div class="flow-node neutral">Website Funnel (WordPress or Netlify)</div>
-          <div class="flow-row-split">
-            <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
-              <div class="flow-arrow">↓</div>
-              <div class="flow-label">Browser</div>
-              <div class="flow-node browser">Meta Pixel (Browser Event)</div>
-            </div>
-            <div class="flow-split-label">+</div>
-            <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
-              <div class="flow-arrow">↓</div>
-              <div class="flow-label">Server</div>
-              <div class="flow-node server">Conversions API (Server Event)</div>
-            </div>
-          </div>
-          <div class="flow-arrow">↓</div>
-          <div class="flow-node dedup">Event Deduplication (shared event_id)</div>
-          <div class="flow-arrow">↓</div>
-          <div class="flow-node meta">Meta Events Manager</div>
-          <div class="flow-arrow">↓</div>
-          <div class="flow-node neutral">Meta Ads Optimization</div>
-        </div>
-      </div>
-    </section>
+<div class="steps">
+  <div class="step-card"><div class="step-num">1</div><div><div class="step-title">Log into Meta Business Manager</div><div class="step-body"><p>Go to <code>business.facebook.com</code> using NOWFit agency credentials. If locked out, confirm Anthony or Emily have fallback access.</p></div></div></div>
+  <div class="step-card"><div class="step-num">2</div><div><div class="step-title">Open Events Manager</div><div class="step-body"><div class="nav-path">All Tools <span>&#8594;</span> Events Manager</div></div></div></div>
+  <div class="step-card"><div class="step-num">3</div><div><div class="step-title">Locate or Create Monet's Data Source</div><div class="step-body"><p>Look for a data source named for Monet (e.g., <em>Monet Fitness &#8212; Web</em>). If it does not exist, click <strong>Connect Data Sources</strong> &#8594; Web &#8594; Next. Name it clearly. Do not reuse Jazz's pixel or any other coach's data source.</p></div></div></div>
+  <div class="step-card"><div class="step-num">4</div><div><div class="step-title">Copy the Pixel ID (Dataset ID)</div><div class="step-body"><p>In the Overview tab, locate the <strong>Dataset ID</strong> &#8212; a 15&#8211;16 digit number. Copy and save it in the NOWFit implementation tracker.<br><div class="screenshot-placeholder">[ Screenshot: Events Manager &#8594; Data Source &#8594; Dataset ID ]</div></p></div></div></div>
+  <div class="step-card"><div class="step-num">5</div><div><div class="step-title">Confirm Ad Account Connection</div><div class="step-body"><p>In Settings, confirm Monet's pixel is shared with <strong>Monet Fitness US</strong> ad account (the account NOWFit now has access to). If not connected:<div class="nav-path">Settings <span>&#8594;</span> Add Assets <span>&#8594;</span> Ad Accounts</div></p></div></div></div>
+</div>
 
-    <hr class="divider">
+<h4>Verification Checklist</h4>
+<ul class="checklist">
+  <li class="checklist-item"><span class="checklist-box"></span>Pixel ID (Dataset ID) confirmed and saved in NOWFit tracker</li>
+  <li class="checklist-item"><span class="checklist-box"></span>Pixel is distinct from Jazz's pixel &#8212; no sharing between coaches</li>
+  <li class="checklist-item"><span class="checklist-box"></span>Pixel linked to Monet Fitness US ad account</li>
+  <li class="checklist-item"><span class="checklist-box"></span>No duplicate active pixels on the same domain</li>
+  <li class="checklist-item"><span class="checklist-box"></span>Business Manager compliance complete: legal name, address, phone number</li>
+</ul>
+</section>
 
-    <!-- SCOPE -->
-    <section class="section" id="scope">
-      <div class="section-header">
-        <div class="section-num" style="background:var(--color-green-bg);color:var(--color-green)">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        </div>
-        <h2 class="section-title">Tracking Scope &amp; Operating Model</h2>
-      </div>
-      <p class="section-desc">NOWFit should treat Monet's ecosystem as a multi-surface lead funnel. Both the WordPress site and the Netlify landing page function as lead and application intake first — with consultation, qualification, and payment happening downstream. Tracking should not stop at a raw lead form submission.</p>
-      <div class="callout warning">
-        <span class="callout-icon">⚠️</span>
-        <div class="callout-body"><strong>Critical Principle</strong>Do not optimize Meta campaigns for raw form fills if the business closes value later through consultations, qualification, and payment. Meta should receive the full signal hierarchy to optimize correctly.</div>
-      </div>
-      <div class="platform-grid">
-        <div class="platform-card">
-          <div class="platform-card-head">
-            <div class="platform-icon" style="background:#e8f0fe"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1b6ef3" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg></div>
-            <div><div class="platform-name">WordPress Site</div><div class="platform-sub">monetpilatesandstrength.com</div></div>
-          </div>
-          <p style="font-size:12px;color:var(--color-text-muted);margin-bottom:10px">Main application and qualification entry point. Multi-step form, team contact, program selection, and app onboarding.</p>
-          <div class="platform-options">
-            <div class="platform-option"><div class="platform-option-dot"></div>Browser pixel in &lt;head&gt; via plugin or hook</div>
-            <div class="platform-option"><div class="platform-option-dot"></div>WordPress-side CAPI via PHP hook + REST endpoint</div>
-            <div class="platform-option"><div class="platform-option-dot"></div>Official Meta for WordPress plugin (low-friction)</div>
-          </div>
-        </div>
-        <div class="platform-card">
-          <div class="platform-card-head">
-            <div class="platform-icon" style="background:#e8fff0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1a7a4a" stroke-width="2"><polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5 12 2"/></svg></div>
-            <div><div class="platform-name">Netlify / GHL Page</div><div class="platform-sub">bejewelled-llama-eaffb5.netlify.app</div></div>
-          </div>
-          <p style="font-size:12px;color:var(--color-text-muted);margin-bottom:10px">Landing page and lead intake. Quiz/application, clarity call, personalized plan. Managed via GHL or Netlify natively.</p>
-          <div class="platform-options">
-            <div class="platform-option"><div class="platform-option-dot" style="background:var(--color-green)"></div>Browser pixel via GHL Head Tracking Code or Netlify snippet</div>
-            <div class="platform-option"><div class="platform-option-dot" style="background:var(--color-green)"></div>Server events via GHL Workflows or Netlify Function</div>
-            <div class="platform-option"><div class="platform-option-dot" style="background:var(--color-green)"></div>GTM server-side (advanced governance)</div>
-          </div>
-        </div>
-      </div>
-    </section>
+<!-- S3 -->
+<section class="section" id="s3">
+<div class="section-eyebrow"><span class="section-number">SECTION 03</span><div class="section-divider"></div></div>
+<h2>Install Pixel on HTML Site <span class="changed-badge">Updated</span></h2>
+<p class="section-desc">Monet's site is hand-coded HTML edited by the NOWFit dev team and deployed to Cloudflare Pages or Netlify. There is no WordPress, no CMS, no GHL funnel. The pixel is pasted directly into the HTML source file.</p>
 
-    <hr class="divider">
+<div class="section-intro-box"><strong>No CMS. No plugin.</strong> Open the HTML file in the code editor, add the pixel code inside <code>&lt;head&gt;</code>, and redeploy to Cloudflare or Netlify. The live site URL for testing is: <code>bejewelled-llama-eaffb5.netlify.app</code> (staging) &#8212; the final domain will replace this when live.</div>
 
-    <!-- EVENT MAP -->
-    <section class="section" id="event-map">
-      <div class="section-header">
-        <div class="section-num" style="background:var(--color-purple-bg);color:var(--color-purple)">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-        </div>
-        <h2 class="section-title">Funnel Event Map</h2>
-      </div>
-      <p class="section-desc">The recommended conversion signal hierarchy for Monet's funnel. Send all four events so Meta can optimize toward actual revenue, not just top-of-funnel volume.</p>
-      <div class="event-ladder">
-        <div class="event-item">
-          <div class="event-rank r1">1</div>
-          <div class="event-info">
-            <div class="event-name">Lead</div>
-            <div class="event-trigger">Trigger: Final application or form submission completed</div>
-          </div>
-          <div class="event-badge"><span class="tag tag-blue">Standard</span></div>
-        </div>
-        <div class="event-item">
-          <div class="event-rank r2">2</div>
-          <div class="event-info">
-            <div class="event-name">Schedule</div>
-            <div class="event-trigger">Trigger: Consultation or appointment confirmed booked</div>
-          </div>
-          <div class="event-badge"><span class="tag tag-green">Standard</span></div>
-        </div>
-        <div class="event-item">
-          <div class="event-rank r3">3</div>
-          <div class="event-info">
-            <div class="event-name">QualifiedLead</div>
-            <div class="event-trigger">Trigger: Lead reviewed and marked sales-qualified</div>
-          </div>
-          <div class="event-badge"><span class="tag tag-purple">Custom</span></div>
-        </div>
-        <div class="event-item">
-          <div class="event-rank r4">4</div>
-          <div class="event-info">
-            <div class="event-name">Purchase</div>
-            <div class="event-trigger">Trigger: Payment or enrollment finalized only</div>
-          </div>
-          <div class="event-badge"><span class="tag tag-orange">Revenue</span></div>
-        </div>
-      </div>
-      <div class="callout critical">
-        <span class="callout-icon">🚫</span>
-        <div class="callout-body"><strong>Purchase Firing Rule</strong>Fire Purchase <strong>only</strong> after payment is fully finalized — not after a pre-payment form, intent action, or order intent click. False purchase signals will corrupt Meta's optimization model.</div>
-      </div>
-    </section>
+<div class="steps">
+  <div class="step-card"><div class="step-num">1</div><div><div class="step-title">Open the main HTML file in the code editor</div><div class="step-body"><p>Typically <code>index.html</code>. This file is stored in the NOWFit project folder for Monet and pushed to Cloudflare Pages or Netlify for hosting.</p></div></div></div>
+  <div class="step-card"><div class="step-num">2</div><div><div class="step-title">Paste the base code inside <code>&lt;head&gt;</code> &#8212; as high as possible</div><div class="step-body"><p>Replace <code>YOUR_PIXEL_ID</code> with Monet's confirmed Dataset ID from Section 2. Position it before any other scripts.</p></div></div></div>
+</div>
 
-    <hr class="divider">
-
-    <!-- SECTION 1 -->
-    <section class="section" id="s1">
-      <div class="section-header">
-        <div class="section-num">1</div>
-        <h2 class="section-title">Confirm the Correct Meta Data Set</h2>
-      </div>
-      <p class="section-desc">Before any code or workflow changes, verify the exact Meta data set in use. The existing client screenshots show the active dataset is <strong>NOWFit Master Dataset</strong>, Pixel ID <code>3015982851929798</code>.</p>
-      <div class="steps">
-        <div class="step"><div class="step-num">1</div><div class="step-body"><div class="step-label">Open Meta Business Suite</div><div class="step-desc">Log in and confirm you are inside the correct business portfolio for Monet.</div></div></div>
-        <div class="step"><div class="step-num">2</div><div class="step-body"><div class="step-label">Open Events Manager</div><div class="step-desc">Navigate to the Events Manager from the main Business Suite menu.</div><div class="step-path">Business Suite <span class="path-sep">›</span> Events Manager</div></div></div>
-        <div class="step"><div class="step-num">3</div><div class="step-body"><div class="step-label">Select the Correct Data Set</div><div class="step-desc">Select <strong>NOWFit Master Dataset</strong> from the left-side source list. Confirm ID <code>3015982851929798</code>.</div></div></div>
-        <div class="step"><div class="step-num">4</div><div class="step-body"><div class="step-label">Open Settings</div><div class="step-desc">Click the Settings tab within the selected data set to view the data set ID and connected properties.</div><div class="step-path">Events Manager <span class="path-sep">›</span> Select Dataset <span class="path-sep">›</span> Settings</div></div></div>
-        <div class="step"><div class="step-num">5</div><div class="step-body"><div class="step-label">Verify Connected Ad Account</div><div class="step-desc">Confirm the correct Monet ad account appears under Connected Assets. If missing, use Add Assets before launch.</div></div></div>
-      </div>
-      <ul class="checklist" id="cl-s1">
-        <li onclick="toggleCheck(this)"><span class="check-box"><svg class="check-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span>Correct business portfolio selected</li>
-        <li onclick="toggleCheck(this)"><span class="check-box"><svg class="check-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span>NOWFit Master Dataset selected — ID 3015982851929798</li>
-        <li onclick="toggleCheck(this)"><span class="check-box"><svg class="check-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span>Data set ID copied and documented</li>
-        <li onclick="toggleCheck(this)"><span class="check-box"><svg class="check-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span>Connected ad account verified</li>
-        <li onclick="toggleCheck(this)"><span class="check-box"><svg class="check-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span>No accidental duplicate data set created</li>
-      </ul>
-    </section>
-
-    <hr class="divider">
-
-    <!-- SECTION 2 -->
-    <section class="section" id="s2">
-      <div class="section-header">
-        <div class="section-num">2</div>
-        <h2 class="section-title">Install the Browser Meta Pixel</h2>
-      </div>
-      <p class="section-desc">Install the browser pixel on every active funnel surface. Use one method per surface only — do not combine multiple installation approaches on the same page.</p>
-      <div class="callout critical">
-        <span class="callout-icon">🚫</span>
-        <div class="callout-body"><strong>One Pixel Per Surface</strong>Never install the browser pixel twice on the same page through different methods (e.g., manual head code AND the Meta plugin simultaneously). Duplicate installs cause duplicate PageView events and noisy Diagnostics.</div>
-      </div>
-      <p style="font-size:13px;font-weight:700;margin-bottom:10px;color:var(--color-text)">WordPress Installation Options</p>
-      <div class="steps">
-        <div class="step"><div class="step-num">A</div><div class="step-body"><div class="step-label">Header Injection Plugin (Recommended for Non-Developers)</div><div class="step-desc">Install "Head &amp; Footer Code" from WordPress plugins. Paste pixel code into the HEAD field.</div><div class="step-path">Plugins <span class="path-sep">›</span> Add New <span class="path-sep">›</span> Head &amp; Footer Code <span class="path-sep">›</span> Tools <span class="path-sep">›</span> HEAD field</div></div></div>
-        <div class="step"><div class="step-num">B</div><div class="step-body"><div class="step-label">Child Theme / wp_head Hook</div><div class="step-desc">Add pixel code before &lt;/head&gt; in child theme's header.php, or via wp_head hook in functions.php.</div></div></div>
-        <div class="step"><div class="step-num">C</div><div class="step-body"><div class="step-label">Official Meta Plugin</div><div class="step-desc">Install the official Meta for WordPress plugin. Run the Facebook Business Extension setup flow. Ensure you select the existing data set, not create a new one.</div></div></div>
-      </div>
-      <p style="font-size:13px;font-weight:700;margin:16px 0 10px;color:var(--color-text)">Netlify / GHL Installation Options</p>
-      <div class="steps">
-        <div class="step"><div class="step-num">A</div><div class="step-body"><div class="step-label">GHL Funnel Head Tracking Code</div><div class="step-desc">Navigate to the funnel settings inside GoHighLevel. Paste the pixel base code into the Head Tracking Code field.</div><div class="step-path">Sites <span class="path-sep">›</span> Funnels <span class="path-sep">›</span> Select Funnel <span class="path-sep">›</span> Settings <span class="path-sep">›</span> Head Tracking Code</div></div></div>
-        <div class="step"><div class="step-num">B</div><div class="step-body"><div class="step-label">Netlify Snippet Injection</div><div class="step-desc">Use Netlify's snippet injection (Site Settings → Build &amp; deploy → Snippet injection) to inject the pixel code site-wide.</div></div></div>
-      </div>
-      <div class="code-wrap">
-        <div class="code-label"><span>Meta Pixel Base Code — Pixel ID: 3015982851929798</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
-        <pre>&lt;!-- Meta Pixel Code --&gt;
+<div class="code-label">Meta Pixel Base Code &#8212; paste in &lt;head&gt;</div>
+<pre><span class="hl-comment">&lt;!-- Meta Pixel Code &#8212; Monet Fitness --&gt;</span>
 &lt;script&gt;
 !function(f,b,e,v,n,t,s)
 {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
@@ -692,422 +366,420 @@ t.src=v;s=b.getElementsByTagName(e)[0];
 s.parentNode.insertBefore(t,s)}(window, document,'script',
 'https://connect.facebook.net/en_US/fbevents.js');
 
-fbq('init', '3015982851929798');
-fbq('track', 'PageView');
+<span class="hl-fn">fbq</span>(<span class="hl-string">'init'</span>, <span class="hl-string">'YOUR_PIXEL_ID'</span>);
+<span class="hl-fn">fbq</span>(<span class="hl-string">'track'</span>, <span class="hl-string">'PageView'</span>);
 &lt;/script&gt;
 &lt;noscript&gt;
-&lt;img height="1" width="1" style="display:none"
-src="https://www.facebook.com/tr?id=3015982851929798&amp;ev=PageView&amp;noscript=1"/&gt;
+  &lt;img height="1" width="1" style="display:none"
+  src="https://www.facebook.com/tr?id=YOUR_PIXEL_ID&amp;ev=PageView&amp;noscript=1"/&gt;
 &lt;/noscript&gt;
-&lt;!-- End Meta Pixel Code --&gt;</pre>
-      </div>
-      <ul class="checklist" id="cl-s2">
-        <li onclick="toggleCheck(this)"><span class="check-box"><svg class="check-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span>Pixel installed once on WordPress (one method only)</li>
-        <li onclick="toggleCheck(this)"><span class="check-box"><svg class="check-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span>Pixel installed once on Netlify / GHL funnel page</li>
-        <li onclick="toggleCheck(this)"><span class="check-box"><svg class="check-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span>PageView visible in Meta Test Events</li>
-        <li onclick="toggleCheck(this)"><span class="check-box"><svg class="check-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span>No duplicate PageView warnings in Diagnostics</li>
-      </ul>
-    </section>
+<span class="hl-comment">&lt;!-- End Meta Pixel Code --&gt;</span></pre>
 
-    <hr class="divider">
+<h3>Lead Event &#8212; Fire on Form Submission</h3>
+<p>Add the following to the form submit handler. This generates a unique <code>eventID</code> at submission time and captures the <code>fbc</code> and <code>fbp</code> values that must be stored alongside the lead in the NowFit CRM so they pass through to Stripe metadata at payment.</p>
 
-    <!-- SECTION 3 -->
-    <section class="section" id="s3">
-      <div class="section-header">
-        <div class="section-num">3</div>
-        <h2 class="section-title">Generate the CAPI Access Token</h2>
-      </div>
-      <p class="section-desc">The Conversions API requires an access token generated inside Events Manager and stored securely server-side. This token must never appear in front-end code or public repositories.</p>
-      <div class="steps">
-        <div class="step"><div class="step-num">1</div><div class="step-body"><div class="step-label">Open Events Manager</div><div class="step-desc">Navigate to Events Manager inside Meta Business Suite.</div></div></div>
-        <div class="step"><div class="step-num">2</div><div class="step-body"><div class="step-label">Select NOWFit Master Dataset</div><div class="step-desc">Confirm you are inside the correct data set (ID: 3015982851929798).</div></div></div>
-        <div class="step"><div class="step-num">3</div><div class="step-body"><div class="step-label">Open Settings → Conversions API</div><div class="step-desc">Go to the Settings tab and scroll to the Conversions API section.</div><div class="step-path">Events Manager <span class="path-sep">›</span> Settings <span class="path-sep">›</span> Conversions API</div></div></div>
-        <div class="step"><div class="step-num">4</div><div class="step-body"><div class="step-label">Click Generate Access Token</div><div class="step-desc">Click Generate Access Token. Copy the full token string immediately — it will not be shown again.</div></div></div>
-        <div class="step"><div class="step-num">5</div><div class="step-body"><div class="step-label">Store Token Securely</div><div class="step-desc">Store in WordPress wp-config.php, Netlify environment variables, or a secure secret manager. Never in front-end HTML or JavaScript.</div></div></div>
-      </div>
-      <div class="callout critical">
-        <span class="callout-icon">🔒</span>
-        <div class="callout-body"><strong>Token Security Rule</strong>The CAPI access token must be stored server-side only. Never place it in browser-visible JavaScript, public HTML, or any Git repository. Exposure of this token compromises your entire Meta data set.</div>
-      </div>
-    </section>
+<div class="code-label">Lead Event &#8212; form submit handler</div>
+<pre><span class="hl-comment">// Unique event ID for this lead &#8212; required for CAPI deduplication</span>
+const eventID = <span class="hl-string">'lead_'</span> + Date.now() + <span class="hl-string">'_'</span> + Math.random().toString(<span class="hl-num">36</span>).substr(<span class="hl-num">2</span>, <span class="hl-num">9</span>);
+document.getElementById(<span class="hl-string">'meta_event_id'</span>).value = eventID;
 
-    <hr class="divider">
+<span class="hl-comment">// Capture fbc (from URL) and fbp (from cookie) &#8212; pass these to NowFit CRM on lead creation</span>
+const urlParams = new URLSearchParams(window.location.search);
+const fbc = urlParams.get(<span class="hl-string">'fbclid'</span>)
+  ? <span class="hl-string">'fb.1.'</span> + Date.now() + <span class="hl-string">'.'</span> + urlParams.get(<span class="hl-string">'fbclid'</span>)
+  : <span class="hl-string">''</span>;
+const fbp = document.cookie.match(<span class="hl-string">/_fbp=([^;]*)/</span>)?.[<span class="hl-num">1</span>] || <span class="hl-string">''</span>;
 
-    <!-- SECTION 4 -->
-    <section class="section" id="s4">
-      <div class="section-header">
-        <div class="section-num">4</div>
-        <h2 class="section-title">Configure Server Events by Platform</h2>
-      </div>
-      <p class="section-desc">Server events are required alongside the browser pixel. They provide stronger conversion signals that are less dependent on browser conditions such as ad blockers, tracking prevention, or dropped client-side events.</p>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>Event</th><th>WordPress Trigger</th><th>Netlify / GHL Trigger</th></tr></thead>
-          <tbody>
-            <tr><td><code>Lead</code></td><td>CF7 <code>wpcf7mailsent</code>, Gravity Forms <code>gform_after_submission</code>, or WPForms <code>wpforms_process_complete</code></td><td>GHL Form Submitted workflow trigger or Netlify Function on POST</td></tr>
-            <tr><td><code>Schedule</code></td><td>Booking system success URL or scheduler webhook after confirmed booking</td><td>GHL Appointment Booked workflow trigger</td></tr>
-            <tr><td><code>QualifiedLead</code></td><td>CRM or pipeline stage change event after qualification review</td><td>GHL Pipeline Stage Updated workflow trigger</td></tr>
-            <tr><td><code>Purchase</code></td><td>WooCommerce <code>woocommerce_payment_complete</code> or payment processor webhook</td><td>GHL Payment Completed workflow trigger</td></tr>
-          </tbody>
-        </table>
-      </div>
-      <div class="callout info">
-        <span class="callout-icon">💡</span>
-        <div class="callout-body"><strong>GoHighLevel Workflow Path</strong>If lead intake and automation are managed in GoHighLevel, use workflow-triggered CAPI actions as the server event layer. GHL natively supports Lead, Schedule, and Purchase events via workflow action blocks.</div>
-      </div>
-      <div class="callout warning">
-        <span class="callout-icon">⚠️</span>
-        <div class="callout-body"><strong>Schedule Timing</strong>Send the Schedule event only after appointment confirmation exists — not when a calendar widget is merely opened or a time slot is viewed.</div>
-      </div>
-    </section>
+<span class="hl-comment">// Store in hidden form fields or send to NowFit CRM endpoint</span>
+document.getElementById(<span class="hl-string">'meta_fbc'</span>).value = fbc;
+document.getElementById(<span class="hl-string">'meta_fbp'</span>).value = fbp;
 
-    <hr class="divider">
+<span class="hl-fn">fbq</span>(<span class="hl-string">'track'</span>, <span class="hl-string">'Lead'</span>, {
+  content_name: <span class="hl-string">'Free Consultation &#8212; Pilates x Strength'</span>
+}, {
+  eventID: eventID
+});</pre>
 
-    <!-- SECTION 5 -->
-    <section class="section" id="s5">
-      <div class="section-header">
-        <div class="section-num">5</div>
-        <h2 class="section-title">Event Deduplication</h2>
-      </div>
-      <p class="section-desc">Deduplication is the most critical technical rule in this entire setup. Meta merges browser and server events into one conversion only when both share the same <code>event_name</code> and the same <code>event_id</code>. Without this, Meta counts every conversion twice.</p>
-      <div class="diagram">
-        <div class="diagram-title">Deduplication Flow</div>
-        <div class="flow">
-          <div class="flow-node neutral">User Submits Form</div>
-          <div class="flow-row">
-            <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1">
-              <div class="flow-arrow">↓</div>
-              <div class="flow-label">Browser fires</div>
-              <div class="flow-node browser" style="width:100%;min-width:unset">fbq('track', 'Lead', {}, {eventID: 'lead_12345'})</div>
-            </div>
-            <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1">
-              <div class="flow-arrow">↓</div>
-              <div class="flow-label">Server sends</div>
-              <div class="flow-node server" style="width:100%;min-width:unset">event_name: Lead / event_id: lead_12345</div>
-            </div>
-          </div>
-          <div class="flow-arrow">↓</div>
-          <div class="flow-node dedup">Meta matches shared event_id → Deduplicates</div>
-          <div class="flow-arrow">↓</div>
-          <div class="flow-node neutral">Single Conversion Counted ✓</div>
-        </div>
-      </div>
-      <div class="code-wrap">
-        <div class="code-label"><span>Browser Event — Lead with event_id</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
-        <pre>// Generate unique ID for this lead event
-const eventId = `lead_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+<h3>Purchase Confirmation Page &#8212; After Stripe Checkout</h3>
+<p>Stripe appends the session ID to the success URL automatically. The confirmation page script reads it and uses it as the <code>eventID</code>. This same value is the <code>event_id</code> in the CAPI webhook payload, enabling deduplication.</p>
 
-// Browser pixel fires with the event ID
-fbq('track', 'Lead', { content_name: 'Main Application' }, { eventID: eventId });</pre>
-      </div>
-      <div class="code-wrap">
-        <div class="code-label"><span>Server Event (CAPI Payload) — same event_id</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
-        <pre>{
-  "event_name": "Lead",
-  "event_id":   "lead_12345",          // ← must match browser eventID exactly
-  "event_time": 1713999600,
-  "action_source": "website",
-  "event_source_url": "https://bejewelled-llama-eaffb5.netlify.app/"
+<div class="code-label">Purchase Pixel &#8212; confirmation / thank-you page</div>
+<pre><span class="hl-comment">// Stripe adds ?session_id={CHECKOUT_SESSION_ID} to the success_url</span>
+<span class="hl-comment">// Ensure success_url is set to: https://yourdomain.com/thank-you?session_id={CHECKOUT_SESSION_ID}</span>
+const urlParams = new URLSearchParams(window.location.search);
+const stripeSessionId = urlParams.get(<span class="hl-string">'session_id'</span>);
+
+if (stripeSessionId) {
+  <span class="hl-fn">fbq</span>(<span class="hl-string">'track'</span>, <span class="hl-string">'Purchase'</span>, {
+    value: <span class="hl-num">145.00</span>,     <span class="hl-comment">// use actual subscription price</span>
+    currency: <span class="hl-string">'USD'</span>
+  }, {
+    eventID: stripeSessionId  <span class="hl-comment">// matches CAPI event_id &#8212; enables deduplication</span>
+  });
 }</pre>
-      </div>
-      <p style="font-size:13px;font-weight:700;margin:16px 0 10px;color:var(--color-text)">Recommended Event ID Convention</p>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>Event</th><th>Recommended ID Format</th></tr></thead>
-          <tbody>
-            <tr><td><code>Lead</code></td><td><code>lead_&lt;submission_id&gt;</code></td></tr>
-            <tr><td><code>Schedule</code></td><td><code>schedule_&lt;booking_id&gt;</code></td></tr>
-            <tr><td><code>QualifiedLead</code></td><td><code>qualified_&lt;stage_change_id&gt;</code></td></tr>
-            <tr><td><code>Purchase</code></td><td><code>purchase_&lt;order_id&gt;</code></td></tr>
-          </tbody>
-        </table>
-      </div>
-      <div class="callout critical">
-        <span class="callout-icon">❌</span>
-        <div class="callout-body"><strong>Common Deduplication Mistakes</strong>
-        • Browser fires <code>Lead</code> but server sends <code>lead</code> (case mismatch)<br>
-        • Browser and server use different ID values<br>
-        • Multiple pixel installs creating duplicate browser events<br>
-        • Purchase fires before payment is complete</div>
-      </div>
-    </section>
 
-    <hr class="divider">
+<div class="steps">
+  <div class="step-card"><div class="step-num">3</div><div><div class="step-title">Deploy to Cloudflare or Netlify</div><div class="step-body"><p>Save the HTML file and push to the Cloudflare Pages project or Netlify project folder. Deployment is automatic on push.</p></div></div></div>
+  <div class="step-card"><div class="step-num">4</div><div><div class="step-title">Verify with Meta Pixel Helper</div><div class="step-body"><p>Install the Meta Pixel Helper Chrome extension. Visit the live URL. Confirm PageView fires. Submit the contact form and confirm Lead fires with an <code>eventID</code> value.<div class="screenshot-placeholder">[ Screenshot: Pixel Helper &#8212; Lead event with eventID confirmed ]</div></p></div></div></div>
+</div>
 
-    <!-- SECTION 6 -->
-    <section class="section" id="s6">
-      <div class="section-header">
-        <div class="section-num">6</div>
-        <h2 class="section-title">Advanced Matching Parameters</h2>
-      </div>
-      <p class="section-desc">Advanced matching improves Meta's ability to connect events to real users. Send as many identifying parameters as your form captures. This directly improves attribution accuracy, audience modeling quality, and optimization performance.</p>
-      <div class="hash-grid">
-        <div class="hash-card hash">
-          <div class="hash-card-head">🔐 Hash Before Sending (SHA-256)</div>
-          <div class="hash-card-body">
-            <div class="hash-field">email</div>
-            <div class="hash-field">phone</div>
-            <div class="hash-field">first_name</div>
-            <div class="hash-field">last_name</div>
-            <div class="hash-field">city</div>
-            <div class="hash-field">state</div>
-            <div class="hash-field">zip</div>
-            <div class="hash-field">country</div>
-          </div>
-        </div>
-        <div class="hash-card nohash">
-          <div class="hash-card-head">✅ Send Raw — Do NOT Hash</div>
-          <div class="hash-card-body">
-            <div class="hash-field">client_ip_address</div>
-            <div class="hash-field">client_user_agent</div>
-            <div class="hash-field">fbc</div>
-            <div class="hash-field">fbp</div>
-          </div>
-        </div>
-      </div>
-      <div class="callout warning">
-        <span class="callout-icon">⚠️</span>
-        <div class="callout-body"><strong>Hashing Rule</strong>Hashing <code>client_ip_address</code>, <code>client_user_agent</code>, <code>fbc</code>, or <code>fbp</code> will break match quality. These must always be sent as raw unmodified values.</div>
-      </div>
-      <div class="code-wrap">
-        <div class="code-label"><span>Advanced Matching — Full User Data Object</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
-        <pre>"user_data": {
-  "em":                  sha256(trim(lowercase(email))),
-  "ph":                  sha256(digits_only(phone)),
-  "fn":                  sha256(trim(lowercase(first_name))),
-  "ln":                  sha256(trim(lowercase(last_name))),
-  "client_ip_address":   req.ip,           // raw — do not hash
-  "client_user_agent":   req.headers['user-agent'],  // raw
-  "fbc":                 cookie._fbc,      // raw
-  "fbp":                 cookie._fbp       // raw
-}</pre>
-      </div>
-    </section>
+<h4>Verification Checklist</h4>
+<ul class="checklist">
+  <li class="checklist-item"><span class="checklist-box"></span>Pixel base code placed inside <code>&lt;head&gt;</code> before all other scripts</li>
+  <li class="checklist-item"><span class="checklist-box"></span>Correct Pixel ID from Section 2 &#8212; not a placeholder</li>
+  <li class="checklist-item"><span class="checklist-box"></span>PageView confirmed on every page load via Pixel Helper</li>
+  <li class="checklist-item"><span class="checklist-box"></span>Lead event fires on form submit with unique eventID</li>
+  <li class="checklist-item"><span class="checklist-box"></span>fbc and fbp captured at form submit and passed to NowFit CRM</li>
+  <li class="checklist-item"><span class="checklist-box"></span>Stripe success_url includes <code>?session_id={CHECKOUT_SESSION_ID}</code></li>
+  <li class="checklist-item"><span class="checklist-box"></span>Purchase pixel fires on confirmation page using Stripe session ID as eventID</li>
+</ul>
+</section>
 
-    <hr class="divider">
+<!-- S4 -->
+<section class="section" id="s4">
+<div class="section-eyebrow"><span class="section-number">SECTION 04</span><div class="section-divider"></div></div>
+<h2>Generate CAPI Access Token</h2>
+<p class="section-desc">The CAPI Access Token is what authorizes the NowFit server to send events to Meta on Monet's behalf. This token is generated once per data source and passed securely to the NowFit CTO for Stripe webhook integration.</p>
 
-    <!-- SECTION 7 -->
-    <section class="section" id="s7">
-      <div class="section-header">
-        <div class="section-num">7</div>
-        <h2 class="section-title">Revenue Signal Quality</h2>
-      </div>
-      <p class="section-desc">Meta's optimization is directly determined by the quality of the conversion signals it receives. If only a Lead event is sent, Meta will optimize for cheap form submissions regardless of whether those leads become customers.</p>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>Funnel Stage</th><th>Meta Event</th><th>Why It Matters</th></tr></thead>
-          <tbody>
-            <tr><td>Final application submitted</td><td><code>Lead</code></td><td>Signals intent, enables audience growth and lookalikes</td></tr>
-            <tr><td>Consultation or call booked</td><td><code>Schedule</code></td><td>Stronger intent signal, filters out passive submissions</td></tr>
-            <tr><td>Lead marked qualified</td><td><code>QualifiedLead</code></td><td>Targets Meta optimization toward higher-value segments</td></tr>
-            <tr><td>Payment or enrollment complete</td><td><code>Purchase</code></td><td>Revenue signal — enables ROAS optimization and value-based lookalikes</td></tr>
-          </tbody>
-        </table>
-      </div>
-      <div class="callout tip">
-        <span class="callout-icon">🎯</span>
-        <div class="callout-body"><strong>Optimization Strategy</strong>Once sufficient Purchase data exists, campaign optimization should move to Purchase as the primary optimization event. Until then, QualifiedLead is the best interim optimization target if the business can reliably define it.</div>
-      </div>
-    </section>
+<div class="steps">
+  <div class="step-card"><div class="step-num">1</div><div><div class="step-title">Open Events Manager and select Monet's Data Source</div><div class="step-body"><div class="nav-path">business.facebook.com <span>&#8594;</span> Events Manager <span>&#8594;</span> Monet's Data Source</div></div></div></div>
+  <div class="step-card"><div class="step-num">2</div><div><div class="step-title">Navigate to Settings &#8594; Conversions API</div><div class="step-body"><div class="nav-path">Data Source <span>&#8594;</span> Settings tab <span>&#8594;</span> Conversions API section <span>&#8594;</span> Generate Access Token</div></div></div></div>
+  <div class="step-card"><div class="step-num">3</div><div><div class="step-title">Copy and store the token securely</div><div class="step-body"><p>The token is shown only once. Store it in the NOWFit password manager (not Slack, not plain email). Pass it to the CTO in Bangalore via an encrypted channel.<div class="screenshot-placeholder">[ Screenshot: Events Manager &#8594; Settings &#8594; Generate Access Token ]</div></p></div></div></div>
+</div>
 
-    <hr class="divider">
+<div class="callout warning">
+  <span class="callout-icon">&#9888;&#65039;</span>
+  <div class="callout-body"><strong>Token Security</strong><p>This token grants write access to Monet's dataset. Never paste it in a Slack message, Google Doc, or code repository. Use a password manager or encrypted message. Revoke and regenerate if accidentally exposed.</p></div>
+</div>
+</section>
 
-    <!-- SECTION 8 -->
-    <section class="section" id="s8">
-      <div class="section-header">
-        <div class="section-num">8</div>
-        <h2 class="section-title">Testing Protocol</h2>
-      </div>
-      <p class="section-desc">Test every major event in Meta Events Manager → Test Events before go-live. Use the Test Event Code for server-side validation. Remove the test code after testing is complete.</p>
-      <div class="steps">
-        <div class="step"><div class="step-num">1</div><div class="step-body"><div class="step-label">Open Test Events</div><div class="step-desc">Navigate to Events Manager, select the data set, and open Test Events.</div><div class="step-path">Events Manager <span class="path-sep">›</span> NOWFit Master Dataset <span class="path-sep">›</span> Test Events</div></div></div>
-        <div class="step"><div class="step-num">2</div><div class="step-body"><div class="step-label">Copy the Test Event Code</div><div class="step-desc">Copy the Test Event Code and temporarily add it to your CAPI server payload as <code>test_event_code</code>.</div></div></div>
-        <div class="step"><div class="step-num">3</div><div class="step-body"><div class="step-label">Trigger Page Load</div><div class="step-desc">Open the site URL. Confirm PageView appears in the Test Events panel.</div></div></div>
-        <div class="step"><div class="step-num">4</div><div class="step-body"><div class="step-label">Submit Final Application</div><div class="step-desc">Complete a full form/application submission. Confirm Lead appears from browser and server.</div></div></div>
-        <div class="step"><div class="step-num">5</div><div class="step-body"><div class="step-label">Book a Test Appointment</div><div class="step-desc">Trigger a confirmation booking. Confirm Schedule event appears.</div></div></div>
-        <div class="step"><div class="step-num">6</div><div class="step-body"><div class="step-label">Trigger Qualification and Purchase</div><div class="step-desc">Trigger a QualifiedLead stage update and a test purchase (where applicable). Confirm both events appear.</div></div></div>
-        <div class="step"><div class="step-num">7</div><div class="step-body"><div class="step-label">Check Deduplication</div><div class="step-desc">Open each Lead event detail. Confirm both browser and server copies appear under the same event, not as two separate conversions.</div></div></div>
-        <div class="step"><div class="step-num">8</div><div class="step-body"><div class="step-label">Remove Test Event Code</div><div class="step-desc">Remove <code>test_event_code</code> from all CAPI payloads before launch.</div></div></div>
-      </div>
-      <ul class="checklist" id="cl-s8">
-        <li onclick="toggleCheck(this)"><span class="check-box"><svg class="check-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span>PageView visible after page load</li>
-        <li onclick="toggleCheck(this)"><span class="check-box"><svg class="check-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span>Lead event fires on final form submission</li>
-        <li onclick="toggleCheck(this)"><span class="check-box"><svg class="check-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span>Schedule event fires on booking confirmed</li>
-        <li onclick="toggleCheck(this)"><span class="check-box"><svg class="check-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span>QualifiedLead event fires on qualification</li>
-        <li onclick="toggleCheck(this)"><span class="check-box"><svg class="check-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span>Purchase event fires only after payment confirmed</li>
-        <li onclick="toggleCheck(this)"><span class="check-box"><svg class="check-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span>Lead event shows browser + server deduplicated as one</li>
-        <li onclick="toggleCheck(this)"><span class="check-box"><svg class="check-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span>Test event code removed before launch</li>
-      </ul>
-    </section>
+<!-- S5 -->
+<section class="section" id="s5">
+<div class="section-eyebrow"><span class="section-number">SECTION 05</span><div class="section-divider"></div></div>
+<h2>Configure Stripe Webhooks for CAPI <span class="changed-badge">New</span></h2>
+<p class="section-desc">This section replaces the former GoHighLevel CAPI workflow setup in its entirety. All server-side Purchase events now come from Stripe. This is a developer task executed by the NowFit CTO and dev team.</p>
 
-    <hr class="divider">
+<div class="section-intro-box"><strong>Developer handoff.</strong> Steps 1&#8211;4 are executed by the NowFit CTO. Steps 5&#8211;6 are verified by NOWFit agency in Meta Events Manager after the dev team confirms the webhook is live. Use Stripe sandbox and NowFit staging environment for all testing &#8212; never trigger live payments for verification.</div>
 
-    <!-- SECTION 9 -->
-    <section class="section" id="s9">
-      <div class="section-header">
-        <div class="section-num">9</div>
-        <h2 class="section-title">Diagnostics &amp; Monitoring</h2>
-      </div>
-      <p class="section-desc">After launch, monitor Events Manager → Diagnostics and individual event detail pages regularly. The five most common issues and their fixes are below.</p>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>Issue</th><th>What It Means</th><th>Fix</th></tr></thead>
-          <tbody>
-            <tr><td><strong>Duplicate events</strong></td><td>Pixel installed more than once, or workflow trigger fires twice</td><td>Remove the extra browser pixel install or duplicate workflow action</td></tr>
-            <tr><td><strong>Missing parameters</strong></td><td>Server payload is incomplete — required fields are absent</td><td>Map required fields correctly in the CAPI payload before resending</td></tr>
-            <tr><td><strong>Low event match quality</strong></td><td>Too few user identifiers are being sent with each event</td><td>Add email, phone, name, IP address, user agent, fbc, and fbp where available</td></tr>
-            <tr><td><strong>Deduplication warning</strong></td><td>Browser and server event IDs do not match</td><td>Reuse the exact same <code>event_id</code> on both the browser pixel call and the CAPI payload</td></tr>
-            <tr><td><strong>False purchase signal</strong></td><td>Purchase event is firing before payment is finalized</td><td>Move the Purchase trigger to a payment confirmation hook or webhook only</td></tr>
-          </tbody>
-        </table>
-      </div>
-      <div class="callout info">
-        <span class="callout-icon">📊</span>
-        <div class="callout-body"><strong>Where to Monitor</strong>Events Manager → select the data set → Diagnostics tab. Also review individual event detail pages for Event Match Quality scores and browser/server split breakdowns.</div>
-      </div>
-    </section>
+<div class="callout stripe">
+  <span class="callout-icon">&#9889;</span>
+  <div class="callout-body"><strong>How This Works</strong><p>Monet has her own Stripe connected account under NowFit's Stripe platform account. When a client completes payment, Stripe fires a <code>checkout.session.completed</code> event to a registered webhook endpoint on the NowFit server. The server reads the customer data from that payload and immediately posts a CAPI Purchase event to Meta, using Monet's Pixel ID and Access Token.</p></div>
+</div>
 
-    <hr class="divider">
+<h3>Stripe Events to Handle</h3>
+<table>
+  <thead><tr><th>Stripe Event</th><th>Meta CAPI Event</th><th>Priority</th></tr></thead>
+  <tbody>
+    <tr><td><code>checkout.session.completed</code></td><td><strong>Purchase</strong></td><td><span class="tag tag-green">Phase 1 &#8212; Required</span></td></tr>
+    <tr><td><code>invoice.payment_succeeded</code></td><td><strong>Purchase</strong> (renewal)</td><td><span class="tag tag-blue">Phase 2</span></td></tr>
+    <tr><td><code>customer.subscription.created</code></td><td><strong>Subscribe</strong> (optional)</td><td><span class="tag tag-blue">Phase 2</span></td></tr>
+  </tbody>
+</table>
 
-    <!-- LAUNCH CHECKLIST -->
-    <section class="section" id="checklist">
-      <div class="section-header">
-        <div class="section-num" style="background:var(--color-green-bg);color:var(--color-green)">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-        </div>
-        <h2 class="section-title">Launch Checklist</h2>
-      </div>
-      <div class="status-bar" id="checklist-status">
-        <span class="status-label">Launch Readiness</span>
-        <div class="status-bar-track"><div class="status-bar-fill" id="launch-fill" style="width:0%"></div></div>
-        <span class="status-count" id="launch-count">0 / 20</span>
-      </div>
-      <p style="font-size:13px;font-weight:700;margin-bottom:10px;color:var(--color-text)">Meta Setup</p>
-      <ul class="checklist launch-cl">
-        <li onclick="toggleCheck(this)"><span class="check-box"><svg class="check-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span>Correct business portfolio selected in Meta Business Suite</li>
-        <li onclick="toggleCheck(this)"><span class="check-box"><svg class="check-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span>NOWFit Master Dataset confirmed (ID: 3015982851929798)</li>
-        <li onclick="toggleCheck(this)"><span class="check-box"><svg class="check-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span>Connected ad account verified under Connected Assets</li>
-        <li onclick="toggleCheck(this)"><span class="check-box"><svg class="check-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span>CAPI Access Token generated and stored securely</li>
-      </ul>
-      <p style="font-size:13px;font-weight:700;margin:16px 0 10px;color:var(--color-text)">Browser Tracking</p>
-      <ul class="checklist launch-cl">
-        <li onclick="toggleCheck(this)"><span class="check-box"><svg class="check-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span>Pixel installed once on WordPress only</li>
-        <li onclick="toggleCheck(this)"><span class="check-box"><svg class="check-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span>Pixel installed once on Netlify / GHL funnel page only</li>
-        <li onclick="toggleCheck(this)"><span class="check-box"><svg class="check-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span>PageView confirmed in Meta Test Events</li>
-        <li onclick="toggleCheck(this)"><span class="check-box"><svg class="check-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span>No duplicate browser events in Diagnostics</li>
-      </ul>
-      <p style="font-size:13px;font-weight:700;margin:16px 0 10px;color:var(--color-text)">Server Tracking</p>
-      <ul class="checklist launch-cl">
-        <li onclick="toggleCheck(this)"><span class="check-box"><svg class="check-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span>WordPress server events configured (Lead, Schedule, QualifiedLead, Purchase)</li>
-        <li onclick="toggleCheck(this)"><span class="check-box"><svg class="check-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span>Netlify / GHL server events configured (Lead, Schedule, Purchase)</li>
-        <li onclick="toggleCheck(this)"><span class="check-box"><svg class="check-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span>All event triggers are firing at the correct funnel stage</li>
-      </ul>
-      <p style="font-size:13px;font-weight:700;margin:16px 0 10px;color:var(--color-text)">Signal Quality</p>
-      <ul class="checklist launch-cl">
-        <li onclick="toggleCheck(this)"><span class="check-box"><svg class="check-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span>Matching event_name and event_id used for deduplication</li>
-        <li onclick="toggleCheck(this)"><span class="check-box"><svg class="check-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span>Advanced matching parameters mapped (email, phone, name, IP, UA, fbc, fbp)</li>
-        <li onclick="toggleCheck(this)"><span class="check-box"><svg class="check-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span>Purchase event includes value and currency</li>
-      </ul>
-      <p style="font-size:13px;font-weight:700;margin:16px 0 10px;color:var(--color-text)">Testing &amp; Launch</p>
-      <ul class="checklist launch-cl">
-        <li onclick="toggleCheck(this)"><span class="check-box"><svg class="check-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span>All 4 events tested in Meta Test Events</li>
-        <li onclick="toggleCheck(this)"><span class="check-box"><svg class="check-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span>Diagnostics reviewed — no unresolved warnings</li>
-        <li onclick="toggleCheck(this)"><span class="check-box"><svg class="check-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span>Match quality checked and acceptable</li>
-        <li onclick="toggleCheck(this)"><span class="check-box"><svg class="check-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span>Test event code removed from all CAPI payloads</li>
-      </ul>
+<div class="steps">
+  <div class="step-card"><div class="step-num">1</div><div><div class="step-title">[Dev] Register Stripe Webhook Endpoint</div><div class="step-body"><div class="nav-path">Stripe Dashboard <span>&#8594;</span> Developers <span>&#8594;</span> Webhooks <span>&#8594;</span> Add Endpoint</div><p style="margin-top:8px">Register the NowFit server URL. Subscribe to <code>checkout.session.completed</code>. The webhook must be scoped to <strong>Monet's connected account</strong>, not just the NowFit platform account. Confirm with CTO that per-connected-account webhook listeners are implemented.</p></div></div></div>
+  <div class="step-card"><div class="step-num">2</div><div><div class="step-title">[Dev] Extract Required Data from Stripe Payload</div><div class="step-body"><p>From the <code>checkout.session.completed</code> payload: <code>customer_details.email</code>, <code>customer_details.name</code>, <code>customer_details.phone</code>, <code>amount_total</code> (in cents &#8212; divide by 100), <code>currency</code>, and <code>id</code> (the session ID used as <code>event_id</code>). Also read <code>fbc</code>, <code>fbp</code>, <code>client_ip_address</code>, and <code>client_user_agent</code> from <code>customer.metadata</code> (populated at lead capture &#8212; see Section 7).</p></div></div></div>
+  <div class="step-card"><div class="step-num">3</div><div><div class="step-title">[Dev] POST CAPI Purchase Event to Meta</div><div class="step-body"><p>Immediately on webhook receipt, POST the CAPI payload to the Meta Graph API endpoint. Do not queue or delay &#8212; late events (beyond 48 hours of the browser event) will not deduplicate correctly. See payload structure below.</p></div></div></div>
+  <div class="step-card"><div class="step-num">4</div><div><div class="step-title">[Dev] Store fbc + fbp in Stripe Customer Metadata at Lead Capture</div><div class="step-body"><p>When a lead submits the form on Monet's site, the JavaScript captures <code>fbclid</code> from the URL and <code>_fbp</code> from the browser cookie (Section 3). The NowFit CRM receives these with the lead. When that lead is converted to a paying customer in Stripe, these values must be written to <code>customer.metadata.fbc</code> and <code>customer.metadata.fbp</code>. This is the only way to link a Stripe purchase back to a Meta ad click.</p></div></div></div>
+  <div class="step-card"><div class="step-num">5</div><div><div class="step-title">[Dev] Confirm Monet's Stripe Connected Account Is Live Before May 6</div><div class="step-body"><p>Monet does not have a NowFit-connected Stripe account yet. She will be onboarded to the NowFit platform as go-live approaches. Confirm with the CTO that her connected account is created, the webhook is scoped to her account, and revenue flows correctly into her individual Stripe account with NowFit's revenue share mechanism intact.</p></div></div></div>
+  <div class="step-card"><div class="step-num">6</div><div><div class="step-title">[NOWFit] Confirm in Stripe Sandbox + Meta Test Events</div><div class="step-body"><p>Use the NowFit staging environment and Stripe sandbox (test card: <code>4242 4242 4242 4242</code>). Complete a test checkout. Confirm the webhook fires. Confirm the CAPI Purchase event appears in Meta Events Manager &#8594; Test Events with value, currency, and user_data.</p></div></div></div>
+</div>
 
-      <div style="margin-top:24px" class="callout success">
-        <span class="callout-icon">🚀</span>
-        <div class="callout-body"><strong>Ready to Launch</strong>When all 20 items above are checked, the implementation is complete and the tracking stack is ready for live campaign traffic. Monitor Diagnostics weekly for the first month.</div>
-      </div>
-    </section>
-
-  </div><!-- /content -->
-</div><!-- /main -->
-</div><!-- /app -->
-
-<script>
-// ── THEME TOGGLE ──
-let _theme = matchMedia('(prefers-color-scheme:dark)').matches ? 'dark' : 'light';
-document.documentElement.setAttribute('data-theme', _theme);
-updateThemeIcon();
-function toggleTheme() {
-  _theme = _theme === 'dark' ? 'light' : 'dark';
-  document.documentElement.setAttribute('data-theme', _theme);
-  updateThemeIcon();
-}
-function updateThemeIcon() {
-  const icon = document.getElementById('theme-icon');
-  if (!icon) return;
-  if (_theme === 'dark') {
-    icon.innerHTML = '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>';
-  } else {
-    icon.innerHTML = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
-  }
-}
-
-// ── MOBILE SIDEBAR ──
-function openSidebar() {
-  document.getElementById('sidebar').classList.add('open');
-  document.getElementById('overlay').classList.add('visible');
-}
-function closeSidebar() {
-  document.getElementById('sidebar').classList.remove('open');
-  document.getElementById('overlay').classList.remove('visible');
-}
-
-// ── NAV ACTIVE ──
-function setActive(el) {
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  el.classList.add('active');
-  if (window.innerWidth <= 768) closeSidebar();
-}
-
-// ── SCROLL SPY ──
-const sections = ['overview','scope','event-map','s1','s2','s3','s4','s5','s6','s7','s8','s9','checklist'];
-const sectionMap = {};
-sections.forEach(id => { const el = document.getElementById(id); if (el) sectionMap[id] = el; });
-const observer = new IntersectionObserver(entries => {
-  entries.forEach(entry => {
-    if (entry.isIntersecting) {
-      const id = entry.target.id;
-      document.querySelectorAll('.nav-item').forEach(n => {
-        n.classList.toggle('active', n.getAttribute('href') === '#' + id);
-      });
+<div class="code-label">CAPI Purchase Event Payload &#8212; sent by NowFit server on checkout.session.completed</div>
+<pre>{
+  <span class="hl-key">"data"</span>: [{
+    <span class="hl-key">"event_name"</span>:       <span class="hl-string">"Purchase"</span>,
+    <span class="hl-key">"event_time"</span>:       <span class="hl-num">1713000000</span>,               <span class="hl-comment">// Unix timestamp from Stripe event</span>
+    <span class="hl-key">"event_id"</span>:         <span class="hl-string">"cs_live_STRIPE_SESSION_ID"</span>,  <span class="hl-comment">// session.id &#8212; CRITICAL for dedup</span>
+    <span class="hl-key">"action_source"</span>:    <span class="hl-string">"website"</span>,
+    <span class="hl-key">"event_source_url"</span>: <span class="hl-string">"https://yourmonetdomain.com/"</span>,
+    <span class="hl-key">"user_data"</span>: {
+      <span class="hl-key">"em"</span>:                 <span class="hl-string">"SHA256(customer_details.email)"</span>,
+      <span class="hl-key">"ph"</span>:                 <span class="hl-string">"SHA256(customer_details.phone)"</span>,
+      <span class="hl-key">"fn"</span>:                 <span class="hl-string">"SHA256(first_name)"</span>,
+      <span class="hl-key">"ln"</span>:                 <span class="hl-string">"SHA256(last_name)"</span>,
+      <span class="hl-key">"ct"</span>:                 <span class="hl-string">"SHA256(city)"</span>,
+      <span class="hl-key">"st"</span>:                 <span class="hl-string">"SHA256(state)"</span>,
+      <span class="hl-key">"zp"</span>:                 <span class="hl-string">"SHA256(postal_code)"</span>,
+      <span class="hl-key">"country"</span>:            <span class="hl-string">"SHA256(country)"</span>,
+      <span class="hl-key">"fbc"</span>:                <span class="hl-string">"fb.1.xxx.xxx"</span>,  <span class="hl-comment">// from customer.metadata.fbc</span>
+      <span class="hl-key">"fbp"</span>:                <span class="hl-string">"fb.1.xxx.xxx"</span>,  <span class="hl-comment">// from customer.metadata.fbp</span>
+      <span class="hl-key">"client_ip_address"</span>: <span class="hl-string">"x.x.x.x"</span>,       <span class="hl-comment">// from customer.metadata.client_ip</span>
+      <span class="hl-key">"client_user_agent"</span>: <span class="hl-string">"Mozilla/5.0..."</span>  <span class="hl-comment">// from customer.metadata.user_agent</span>
+    },
+    <span class="hl-key">"custom_data"</span>: {
+      <span class="hl-key">"value"</span>:         <span class="hl-num">145.00</span>,          <span class="hl-comment">// amount_total / 100 (Stripe returns cents)</span>
+      <span class="hl-key">"currency"</span>:      <span class="hl-string">"USD"</span>,
+      <span class="hl-key">"content_name"</span>:  <span class="hl-string">"Monet &#8212; Monthly Subscription"</span>
     }
-  });
-}, { rootMargin: '-20% 0px -70% 0px', threshold: 0 });
-Object.values(sectionMap).forEach(el => observer.observe(el));
+  }],
+  <span class="hl-key">"access_token"</span>: <span class="hl-string">"YOUR_CAPI_ACCESS_TOKEN"</span>,
+  <span class="hl-key">"pixel_id"</span>:      <span class="hl-string">"YOUR_PIXEL_ID"</span>
+}</pre>
 
-// ── CHECKLIST TOGGLE ──
-let totalItems = 0, checkedItems = 0;
-function toggleCheck(li) {
-  li.classList.toggle('checked');
-  updateProgress();
-}
-function updateProgress() {
-  const all = document.querySelectorAll('.checklist li');
-  const checked = document.querySelectorAll('.checklist li.checked');
-  const launchAll = document.querySelectorAll('.launch-cl li');
-  const launchChecked = document.querySelectorAll('.launch-cl li.checked');
-  const topPct = Math.round(checked.length / (all.length || 1) * 100);
-  document.getElementById('progress-fill').style.width = topPct + '%';
-  document.getElementById('progress-label').textContent = checked.length + ' / ' + all.length + ' completed';
-  const lPct = Math.round(launchChecked.length / (launchAll.length || 1) * 100);
-  document.getElementById('launch-fill').style.width = lPct + '%';
-  document.getElementById('launch-count').textContent = launchChecked.length + ' / ' + launchAll.length;
-}
-updateProgress();
+<h4>Verification Checklist</h4>
+<ul class="checklist">
+  <li class="checklist-item"><span class="checklist-box"></span>Monet's Stripe connected account created and linked to NowFit platform</li>
+  <li class="checklist-item"><span class="checklist-box"></span>Webhook endpoint registered for Monet's connected account (not just NowFit platform account)</li>
+  <li class="checklist-item"><span class="checklist-box"></span>Subscribed to <code>checkout.session.completed</code></li>
+  <li class="checklist-item"><span class="checklist-box"></span>CAPI Access Token securely passed to CTO and integrated in webhook handler</li>
+  <li class="checklist-item"><span class="checklist-box"></span>fbc and fbp being stored in Stripe customer metadata at lead creation</li>
+  <li class="checklist-item"><span class="checklist-box"></span>All PII fields SHA-256 hashed server-side before sending</li>
+  <li class="checklist-item"><span class="checklist-box"></span>Sandbox test: Purchase event confirmed in Meta Test Events with value and currency</li>
+</ul>
+</section>
 
-// ── COPY CODE ──
-function copyCode(btn) {
-  const pre = btn.closest('.code-wrap').querySelector('pre');
-  navigator.clipboard.writeText(pre.textContent).then(() => {
-    btn.textContent = 'Copied!';
-    btn.classList.add('copied');
-    setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
-  });
-}
-</script>
+<!-- S6 -->
+<section class="section" id="s6">
+<div class="section-eyebrow"><span class="section-number">SECTION 06</span><div class="section-divider"></div></div>
+<h2>Event Deduplication &#8212; Stripe + Pixel <span class="changed-badge">Critical</span></h2>
+<p class="section-desc">When both the browser pixel and the Stripe CAPI webhook fire for the same purchase, Meta must count it only once. This is controlled entirely by the <code>event_id</code> / <code>eventID</code> field.</p>
+
+<div class="callout critical">
+  <span class="callout-icon">&#128680;</span>
+  <div class="callout-body"><strong>The #1 Tracking Mistake</strong><p>If the browser and server events don't share a matching <code>event_id</code>, Meta counts every conversion twice. This inflates reported ROAS, distorts optimization, and makes it impossible to trust performance data. Fix before launch &#8212; not after spend.</p></div>
+</div>
+
+<h3>The Stripe Deduplication Pattern</h3>
+<p>Stripe's <code>checkout.session.id</code> (format: <code>cs_live_xxxx...</code>) is unique per transaction and available on both paths: the browser receives it via the <code>?session_id=</code> URL parameter on the confirmation page; the server receives it in the webhook payload. Use it as the <code>event_id</code> in both places.</p>
+
+<div class="diagram">
+  <div class="diagram-title">Event Deduplication Flow &#8212; Stripe Architecture</div>
+  <div class="flow">
+    <div class="diagram-box box-stripe" style="width:380px">Client completes Stripe checkout</div>
+    <div class="flow-arrow">&#8595;</div>
+    <div style="display:flex;gap:32px;width:100%;justify-content:center">
+      <div class="flow" style="align-items:center;width:44%">
+        <div class="flow-col-label col-browser" style="width:100%">Browser Path</div>
+        <div class="diagram-box box-blue" style="width:100%">Redirected to<br><code style="font-size:10px">/thank-you?session_id=cs_live_xxx</code></div>
+        <div class="flow-arrow">&#8595;</div>
+        <div class="diagram-box box-blue" style="width:100%">Pixel fires Purchase<br><span class="diagram-label">eventID: cs_live_xxx</span></div>
+      </div>
+      <div class="flow" style="align-items:center;width:44%">
+        <div class="flow-col-label col-server" style="width:100%">Server Path</div>
+        <div class="diagram-box box-green" style="width:100%">Stripe fires webhook<br><code style="font-size:10px">checkout.session.completed</code></div>
+        <div class="flow-arrow">&#8595;</div>
+        <div class="diagram-box box-green" style="width:100%">NowFit server posts CAPI<br><span class="diagram-label">event_id: cs_live_xxx</span></div>
+      </div>
+    </div>
+    <div class="flow-arrow">&#8595;</div>
+    <div class="diagram-box box-purple" style="width:380px">Meta matches on event_id = cs_live_xxx<br>&#8594; Deduplicates &#8594; 1 conversion counted &#10003;</div>
+  </div>
+</div>
+
+<h4>Deduplication Troubleshooting</h4>
+<table>
+  <thead><tr><th>Problem</th><th>Likely Cause</th><th>Fix</th></tr></thead>
+  <tbody>
+    <tr><td>Double-counted Purchase events</td><td>Mismatched or missing <code>event_id</code></td><td>Confirm both pixel <code>eventID</code> and CAPI <code>event_id</code> equal Stripe <code>checkout.session.id</code></td></tr>
+    <tr><td>Deduplication not triggering despite matching IDs</td><td>Events arriving more than 48 hours apart</td><td>Send CAPI Purchase immediately on webhook receipt &#8212; never batch or delay</td></tr>
+    <tr><td>Browser Purchase event absent</td><td>No <code>session_id</code> in success URL</td><td>Update Stripe <code>success_url</code> to include <code>{CHECKOUT_SESSION_ID}</code> placeholder</td></tr>
+    <tr><td>Only CAPI event showing, no browser event</td><td>Confirmation page missing pixel code</td><td>Add Purchase pixel script to the thank-you HTML page</td></tr>
+  </tbody>
+</table>
+</section>
+
+<!-- S7 -->
+<section class="section" id="s7">
+<div class="section-eyebrow"><span class="section-number">SECTION 07</span><div class="section-divider"></div></div>
+<h2>Advanced Matching: fbc, fbp, and Customer PII <span class="changed-badge">Updated</span></h2>
+<p class="section-desc">Stripe provides verified, billing-confirmed customer data at the point of payment. This is higher quality than any form-based source. Passing these identifiers improves Meta's event match quality, attribution accuracy, and lookalike audience performance.</p>
+
+<div class="callout success">
+  <span class="callout-icon">&#10003;</span>
+  <div class="callout-body"><strong>Stripe Advantage for Matching</strong><p>Stripe's customer object contains confirmed email, name, phone, and billing address. These are more reliable than unverified form inputs. Passing them to Meta's CAPI user_data fields directly improves the Event Match Quality score on the Purchase event &#8212; the single most important factor in CAPI attribution accuracy.</p></div>
+</div>
+
+<table>
+  <thead><tr><th>Meta Field</th><th>CAPI Parameter</th><th>Stripe Source</th><th>Priority</th></tr></thead>
+  <tbody>
+    <tr><td>Email</td><td><code>em</code></td><td><code>customer_details.email</code></td><td><span class="tag tag-green">Required</span></td></tr>
+    <tr><td>Phone</td><td><code>ph</code></td><td><code>customer_details.phone</code></td><td><span class="tag tag-green">Required</span></td></tr>
+    <tr><td>First Name</td><td><code>fn</code></td><td><code>customer_details.name</code> (split)</td><td><span class="tag tag-green">Required</span></td></tr>
+    <tr><td>Last Name</td><td><code>ln</code></td><td><code>customer_details.name</code> (split)</td><td><span class="tag tag-green">Required</span></td></tr>
+    <tr><td>City</td><td><code>ct</code></td><td><code>customer_details.address.city</code></td><td><span class="tag tag-blue">Recommended</span></td></tr>
+    <tr><td>State</td><td><code>st</code></td><td><code>customer_details.address.state</code></td><td><span class="tag tag-blue">Recommended</span></td></tr>
+    <tr><td>ZIP</td><td><code>zp</code></td><td><code>customer_details.address.postal_code</code></td><td><span class="tag tag-blue">Recommended</span></td></tr>
+    <tr><td>Country</td><td><code>country</code></td><td><code>customer_details.address.country</code></td><td><span class="tag tag-blue">Recommended</span></td></tr>
+    <tr><td>Facebook Click ID</td><td><code>fbc</code></td><td><code>customer.metadata.fbc</code> (set at lead capture)</td><td><span class="tag tag-green">Required</span></td></tr>
+    <tr><td>Facebook Browser ID</td><td><code>fbp</code></td><td><code>customer.metadata.fbp</code> (set at lead capture)</td><td><span class="tag tag-green">Required</span></td></tr>
+    <tr><td>IP Address</td><td><code>client_ip_address</code></td><td><code>customer.metadata.client_ip</code></td><td><span class="tag tag-blue">Recommended</span></td></tr>
+    <tr><td>User Agent</td><td><code>client_user_agent</code></td><td><code>customer.metadata.user_agent</code></td><td><span class="tag tag-blue">Recommended</span></td></tr>
+  </tbody>
+</table>
+
+<div class="callout warning">
+  <span class="callout-icon">&#9888;&#65039;</span>
+  <div class="callout-body"><strong>SHA-256 Hashing Is Mandatory</strong><p>All PII fields (em, ph, fn, ln, ct, st, zp, country) must be SHA-256 hashed server-side before sending to Meta. The NowFit dev team implements this. Raw unhashed data must never be transmitted. Meta will reject unhashed PII and may penalize the dataset.</p></div>
+</div>
+
+<h3>fbc / fbp: The Most Overlooked Parameters</h3>
+<p><code>fbc</code> is derived from the <code>fbclid</code> URL parameter present when a user clicks a Meta ad. <code>fbp</code> comes from the <code>_fbp</code> browser cookie set by the Meta Pixel. Without these two values in the Stripe CAPI event, Meta cannot reliably attribute the purchase back to the specific ad that drove it. These values must be captured at the moment the lead submits the form on Monet's site and preserved through the NowFit CRM all the way to Stripe customer metadata.</p>
+</section>
+
+<!-- S8 -->
+<section class="section" id="s8">
+<div class="section-eyebrow"><span class="section-number">SECTION 08</span><div class="section-divider"></div></div>
+<h2>GoHighLevel Calendar &#8212; Scoped Browser Event <span class="changed-badge">Updated</span></h2>
+<p class="section-desc">GHL is not used for CAPI. It optionally fires a limited browser-side Schedule event when a consultation is booked via the GHL calendar widget embedded on Monet's site. This is supplementary signal only.</p>
+
+<div class="callout warning">
+  <span class="callout-icon">&#9888;&#65039;</span>
+  <div class="callout-body"><strong>Widget-Scoped &#8212; Not Domain Verified</strong><p>The Meta Pixel in GHL fires only on the calendar widget, not on Monet's main HTML domain. It is browser-only with no CAPI backup. Treat it as best-effort signal. Validate via a test booking before counting on it for optimization. If it does not work reliably, deprioritize and revisit in Phase 2.</p></div>
+</div>
+
+<div class="steps">
+  <div class="step-card"><div class="step-num">1</div><div><div class="step-title">Navigate to GHL Calendar Settings</div><div class="step-body"><div class="nav-path">GoHighLevel <span>&#8594;</span> Calendars <span>&#8594;</span> Monet x Team <span>&#8594;</span> Edit (pencil icon) <span>&#8594;</span> Additional Settings <span>&#8594;</span> Forms and Confirmation</div></div></div></div>
+  <div class="step-card"><div class="step-num">2</div><div><div class="step-title">Enter Monet's Pixel ID in the Meta Pixel field</div><div class="step-body"><p>Paste the same Pixel ID used on the HTML site. This fires a browser-side event when someone books through the GHL calendar widget only.<div class="screenshot-placeholder">[ Screenshot: GHL Calendar &#8594; Additional Settings &#8594; Meta Pixel field ]</div></p></div></div></div>
+  <div class="step-card"><div class="step-num">3</div><div><div class="step-title">Test a booking &#8212; verify in Meta Test Events</div><div class="step-body"><p>Submit a test booking through the calendar widget. Check Meta Events Manager &#8594; Test Events. Confirm a Schedule event appears. If it does not appear, the pixel is not firing from the widget domain and further GHL domain verification may be needed.</p></div></div></div>
+</div>
+
+<div class="callout info">
+  <span class="callout-icon">&#8594;</span>
+  <div class="callout-body"><strong>Phase 2: NowFit CRM Stage Triggers</strong><p>When the NowFit platform supports automated stage transitions (currently manual), the dev team can send a server-side CAPI Schedule or QualifiedLead event when a lead's stage is updated. This replaces the GHL widget workaround with a proper, reliable, server-side event.</p></div>
+</div>
+</section>
+
+<!-- S9 -->
+<section class="section" id="s9">
+<div class="section-eyebrow"><span class="section-number">SECTION 09</span><div class="section-divider"></div></div>
+<h2>Conversion Funnel Signal Strategy</h2>
+<p class="section-desc">The signals sent to Meta determine what the algorithm optimizes for. Sending only Lead events trains Meta to find cheap form fillers. Sending Stripe-verified Purchase events with revenue value trains it to find clients who pay.</p>
+
+<table>
+  <thead><tr><th>Funnel Stage</th><th>Event Name</th><th>Trigger</th><th>Source</th><th>Phase</th></tr></thead>
+  <tbody>
+    <tr><td>Contact form submitted</td><td><strong>Lead</strong></td><td>HTML form submission on Monet's site</td><td>Browser Pixel</td><td><span class="tag tag-green">Phase 1</span></td></tr>
+    <tr><td>Consultation booked</td><td><strong>Schedule</strong></td><td>GHL calendar widget booking</td><td>Browser (GHL &#8212; optional)</td><td><span class="tag tag-amber">Phase 1 optional</span></td></tr>
+    <tr><td>Payment confirmed</td><td><strong>Purchase</strong></td><td>Stripe <code>checkout.session.completed</code></td><td>CAPI via Stripe webhook</td><td><span class="tag tag-green">Phase 1 &#8212; Priority</span></td></tr>
+    <tr><td>Lead marked Qualified in NowFit CRM</td><td><strong>QualifiedLead</strong></td><td>Sales team stage update in NowFit platform</td><td>CAPI &#8212; NowFit dev (manual trigger)</td><td><span class="tag tag-blue">Phase 2</span></td></tr>
+    <tr><td>Subscription renewal</td><td><strong>Purchase</strong> (repeat)</td><td>Stripe <code>invoice.payment_succeeded</code></td><td>CAPI via Stripe webhook</td><td><span class="tag tag-blue">Phase 2</span></td></tr>
+  </tbody>
+</table>
+
+<div class="callout success">
+  <span class="callout-icon">&#128200;</span>
+  <div class="callout-body"><strong>Stripe Enables Revenue-Based Optimization</strong><p>Because Stripe knows the exact subscription price, the CAPI Purchase event carries <code>value</code> and <code>currency</code>. This shifts Meta from optimizing for conversion volume to optimizing for revenue. Stripe's customer lifetime value data also supports payback window analysis, seasonal spend adjustments, and DMA-level budget decisions as campaigns scale.</p></div>
+</div>
+</section>
+
+<!-- S10 -->
+<section class="section" id="s10">
+<div class="section-eyebrow"><span class="section-number">SECTION 10</span><div class="section-divider"></div></div>
+<h2>Testing Events &#8212; Sandbox Verification</h2>
+<p class="section-desc">All events must be validated in Meta Test Events before the May 6 go-live. Use the NowFit staging environment and Stripe sandbox. No live payments should be triggered during testing.</p>
+
+<div class="steps">
+  <div class="step-card"><div class="step-num">1</div><div><div class="step-title">Open Meta Events Manager &#8594; Test Events</div><div class="step-body"><div class="nav-path">Events Manager <span>&#8594;</span> Monet's Data Source <span>&#8594;</span> Test Events tab</div></div></div></div>
+  <div class="step-card"><div class="step-num">2</div><div><div class="step-title">Test Browser Lead Event</div><div class="step-body"><p>Enter the staging URL in the Test Events browser. Visit the site. Confirm <strong>PageView</strong> appears. Fill out and submit the lead form. Confirm <strong>Lead</strong> appears with an <code>eventID</code> value. Confirm <code>fbc</code> and <code>fbp</code> are present in the event payload if arriving from a simulated ad click.<div class="screenshot-placeholder">[ Screenshot: Test Events &#8212; Lead event with eventID confirmed ]</div></p></div></div></div>
+  <div class="step-card"><div class="step-num">3</div><div><div class="step-title">Test Stripe CAPI Purchase Event</div><div class="step-body"><p>Using the NowFit staging environment and Stripe sandbox, complete a test checkout with card <code>4242 4242 4242 4242</code>. Verify the NowFit server receives the webhook and sends the CAPI event. Confirm <strong>Purchase</strong> appears in Test Events with <code>value</code>, <code>currency</code>, and populated <code>user_data</code>.<div class="screenshot-placeholder">[ Screenshot: Test Events &#8212; Purchase CAPI event with value confirmed ]</div></p></div></div></div>
+  <div class="step-card"><div class="step-num">4</div><div><div class="step-title">Confirm Deduplication</div><div class="step-body"><p>If both browser and CAPI Purchase events fire for the same test transaction, verify only <strong>one</strong> Purchase is counted after deduplication. Check the Deduplicated Events count in Events Manager. If two Purchase events still show, the <code>event_id</code> values are not matching &#8212; return to Section 6.</p></div></div></div>
+  <div class="step-card"><div class="step-num">5</div><div><div class="step-title">Review Event Match Quality</div><div class="step-body"><p>In Events Manager &#8594; Overview, check the Event Match Quality score on the Purchase event. Target 6.0 or above. Below 4.0 means critical PII parameters are missing from <code>user_data</code> &#8212; add them from Section 7.</p></div></div></div>
+</div>
+
+<h4>Expected Events After Full Testing</h4>
+<ul class="checklist">
+  <li class="checklist-item"><span class="checklist-box"></span>PageView &#8212; confirmed on all pages</li>
+  <li class="checklist-item"><span class="checklist-box"></span>Lead &#8212; confirmed with unique eventID and fbc/fbp present</li>
+  <li class="checklist-item"><span class="checklist-box"></span>Purchase (CAPI) &#8212; confirmed via Stripe sandbox with value and currency</li>
+  <li class="checklist-item"><span class="checklist-box"></span>Schedule &#8212; confirmed via GHL calendar widget (Phase 1 optional)</li>
+  <li class="checklist-item"><span class="checklist-box"></span>Deduplication confirmed &#8212; 1 Purchase counted when both browser and CAPI fire</li>
+  <li class="checklist-item"><span class="checklist-box"></span>Event Match Quality &#8805; 6.0 on Purchase event</li>
+</ul>
+</section>
+
+<!-- S11 -->
+<section class="section" id="s11">
+<div class="section-eyebrow"><span class="section-number">SECTION 11</span><div class="section-divider"></div></div>
+<h2>Diagnostics &amp; Ongoing Monitoring</h2>
+<p class="section-desc">After launch, monitor Meta Events Manager diagnostics weekly. Issues appear here before they affect ROAS.</p>
+
+<div class="nav-path" style="display:inline-flex;margin-bottom:18px">Events Manager <span>&#8594;</span> Monet's Data Source <span>&#8594;</span> Diagnostics tab</div>
+
+<table>
+  <thead><tr><th>Diagnostic Warning</th><th>Cause</th><th>Fix</th></tr></thead>
+  <tbody>
+    <tr><td>Duplicate events detected</td><td>Browser + CAPI events with mismatched or missing event_id</td><td>Confirm Stripe session ID is the event_id in both pixel and CAPI</td></tr>
+    <tr><td>Low event match quality (&lt; 5.0)</td><td>Missing PII fields in CAPI payload</td><td>Add em, ph, fn, ln from Stripe customer_details; add fbc/fbp from customer metadata</td></tr>
+    <tr><td>Purchase event not received</td><td>Stripe webhook not firing or NowFit server error</td><td>Check Stripe &#8594; Developers &#8594; Webhooks &#8594; Event Log; confirm CTO endpoint is live</td></tr>
+    <tr><td>Missing fbc / fbp on Purchase event</td><td>Click ID and browser cookie not captured at lead form or not passed to Stripe metadata</td><td>Confirm JavaScript on Monet's site captures fbclid and _fbp and sends to NowFit CRM</td></tr>
+    <tr><td>Invalid action_source warning</td><td>CAPI sent with wrong action_source value</td><td>Set <code>action_source: "website"</code> for all Stripe checkout events</td></tr>
+    <tr><td>Events arriving late</td><td>NowFit server queue delay or batching</td><td>Send CAPI payload immediately on webhook receipt &#8212; events beyond 48 hours won't deduplicate</td></tr>
+    <tr><td>US audience skewing international</td><td>Geo targeting not configured</td><td>Confirm campaign targeting is US-only; apply DMA-level targeting for initial test budget</td></tr>
+  </tbody>
+</table>
+</section>
+
+<!-- S12 -->
+<section class="section" id="s12">
+<div class="section-eyebrow"><span class="section-number">SECTION 12</span><div class="section-divider"></div></div>
+<h2>Launch Checklist &#8212; Pre-May 6</h2>
+<p class="section-desc">Complete all Phase 1 and Phase 3 items before activating paid campaigns. Phases 2 and 4 are ongoing.</p>
+
+<div class="final-checklist">
+  <h3>Phase 1 &#8212; Meta Business Manager Setup</h3>
+  <div class="check-grid">
+    <ul class="checklist" style="margin:0">
+      <li class="checklist-item"><span class="checklist-box"></span>Business Manager compliance: legal name, address, phone</li>
+      <li class="checklist-item"><span class="checklist-box"></span>Monet Fitness US ad account connected</li>
+      <li class="checklist-item"><span class="checklist-box"></span>Pixel ID confirmed in Events Manager</li>
+    </ul>
+    <ul class="checklist" style="margin:0">
+      <li class="checklist-item"><span class="checklist-box"></span>NOWFit master CAPI dataset configured</li>
+      <li class="checklist-item"><span class="checklist-box"></span>CAPI Access Token generated + passed to CTO</li>
+      <li class="checklist-item"><span class="checklist-box"></span>Domain verification initiated in Business Manager</li>
+    </ul>
+  </div>
+
+  <h3>Phase 2 &#8212; Browser Pixel (HTML Site)</h3>
+  <div class="check-grid">
+    <ul class="checklist" style="margin:0">
+      <li class="checklist-item"><span class="checklist-box"></span>Pixel base code in &lt;head&gt; &#8212; deployed to live URL</li>
+      <li class="checklist-item"><span class="checklist-box"></span>PageView confirmed on all pages via Pixel Helper</li>
+      <li class="checklist-item"><span class="checklist-box"></span>Lead event fires on form submit with unique eventID</li>
+    </ul>
+    <ul class="checklist" style="margin:0">
+      <li class="checklist-item"><span class="checklist-box"></span>fbc and fbp captured at form submit, passed to NowFit CRM</li>
+      <li class="checklist-item"><span class="checklist-box"></span>Stripe success_url includes <code>?session_id={CHECKOUT_SESSION_ID}</code></li>
+      <li class="checklist-item"><span class="checklist-box"></span>Purchase pixel fires on confirmation page</li>
+    </ul>
+  </div>
+
+  <h3>Phase 3 &#8212; Stripe CAPI Integration (Dev Team)</h3>
+  <div class="check-grid">
+    <ul class="checklist" style="margin:0">
+      <li class="checklist-item"><span class="checklist-box"></span>Monet's Stripe connected account live in NowFit platform</li>
+      <li class="checklist-item"><span class="checklist-box"></span>Webhook registered for Monet's connected account</li>
+      <li class="checklist-item"><span class="checklist-box"></span>fbc + fbp stored in Stripe customer metadata at lead creation</li>
+    </ul>
+    <ul class="checklist" style="margin:0">
+      <li class="checklist-item"><span class="checklist-box"></span>CAPI Purchase fires on checkout.session.completed</li>
+      <li class="checklist-item"><span class="checklist-box"></span>All PII fields SHA-256 hashed server-side</li>
+      <li class="checklist-item"><span class="checklist-box"></span>event_id = Stripe checkout session ID</li>
+    </ul>
+  </div>
+
+  <h3>Phase 4 &#8212; Testing, QA, and Verification</h3>
+  <div class="check-grid">
+    <ul class="checklist" style="margin:0">
+      <li class="checklist-item"><span class="checklist-box"></span>Lead event confirmed in Meta Test Events</li>
+      <li class="checklist-item"><span class="checklist-box"></span>Purchase (CAPI) confirmed via Stripe sandbox</li>
+      <li class="checklist-item"><span class="checklist-box"></span>Deduplication confirmed &#8212; 1 conversion, not 2</li>
+    </ul>
+    <ul class="checklist" style="margin:0">
+      <li class="checklist-item"><span class="checklist-box"></span>Event Match Quality &#8805; 6.0 on Purchase event</li>
+      <li class="checklist-item"><span class="checklist-box"></span>Diagnostics tab shows no errors</li>
+      <li class="checklist-item"><span class="checklist-box"></span>US-only campaign targeting confirmed</li>
+    </ul>
+  </div>
+</div>
+
+<div class="callout info" style="margin-top:24px">
+  <span class="callout-icon">&#128203;</span>
+  <div class="callout-body"><strong>This Process Applies to All Coaches in Paid Marketing</strong><p>Every coach entering paid media requires their own pixel/data source, Stripe connected account webhook, and CAPI Access Token. Sections 2&#8211;5 repeat per coach. Jazz is already in the NowFit platform with her Stripe account connected. Monet follows this guide. Future coaches follow the same pattern.</p></div>
+</div>
+
+</section>
+</div>
 </body>
 </html>
